@@ -5,7 +5,7 @@ import { Shield, Mail, Lock, User, ArrowLeft, Sparkles, Check } from "lucide-rea
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-
+import api from "../api";
 const features = [
   "Secure & Private",
   "Role-Based Access",
@@ -16,16 +16,38 @@ const features = [
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
     setIsLoading(true);
-    
-    // Simulate loading animation
-    setTimeout(() => {
+
+    try {
+      let response;
+      if (isLogin) {
+        response = await api.post("/auth/login", { email, password });
+      } else {
+        response = await api.post("/auth/register", { name, email, password });
+      }
+
+      // Store token
+      if (response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      // Redirect on success
       navigate("/villager");
-    }, 800);
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      setErrorMsg(error.response?.data?.message || "Authentication failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAdminDemo = () => {
@@ -96,7 +118,7 @@ export default function Auth() {
             className="hidden md:flex relative bg-gradient-to-br from-teal-600 to-emerald-600 p-8 lg:p-12 flex-col justify-between text-white overflow-hidden"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.1),transparent)]" />
-            
+
             {/* Floating Icons Animation */}
             <motion.div
               animate={{ y: [0, -10, 0] }}
@@ -105,7 +127,7 @@ export default function Auth() {
             >
               <Sparkles className="size-8" />
             </motion.div>
-            
+
             <div className="relative z-10">
               <motion.div
                 initial={{ scale: 0 }}
@@ -203,6 +225,8 @@ export default function Auth() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
                       <Input
                         id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your full name"
                         className="pl-11 h-12 bg-white/60 border-slate-200 focus:border-teal-500 focus:ring-teal-500 transition-all"
                       />
@@ -223,6 +247,8 @@ export default function Auth() {
                   <Input
                     id="email"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     className="pl-11 h-12 bg-white/60 border-slate-200 focus:border-teal-500 focus:ring-teal-500 transition-all"
                   />
@@ -241,11 +267,23 @@ export default function Auth() {
                   <Input
                     id="password"
                     type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     className="pl-11 h-12 bg-white/60 border-slate-200 focus:border-teal-500 focus:ring-teal-500 transition-all"
                   />
                 </div>
               </motion.div>
+
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100"
+                >
+                  {errorMsg}
+                </motion.div>
+              )}
 
               {isLogin && (
                 <motion.div

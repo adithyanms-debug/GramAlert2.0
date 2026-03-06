@@ -18,34 +18,81 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useLocation } from "react-router";
+import { useEffect } from "react";
+import api from "../api";
 
 export default function Profile() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  
-  // Mock user data
+
+  // Real user data state
   const [userData, setUserData] = useState({
-    name: isAdmin ? "Administrator" : "Rajesh Kumar",
-    email: isAdmin ? "admin@gramalert.gov.in" : "rajesh.kumar@email.com",
-    phone: isAdmin ? "+91 98765 43210" : "+91 98765 12345",
-    address: "Village: Bannur, Taluk: Mysore, District: Mysore, State: Karnataka",
+    name: isAdmin ? "Administrator" : "Loading...",
+    email: "",
+    phone: "",
+    address: "",
     role: isAdmin ? "Administrator" : "Villager",
-    joinedDate: "January 15, 2025",
-    userId: isAdmin ? "ADMIN-001" : "VIL-00234",
+    joinedDate: "",
+    userId: "",
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Mock save - in real app would save to backend
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoadingItems, setIsLoadingItems] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/users/profile');
+        if (response.data) {
+          setUserData(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+      } finally {
+        setIsLoadingItems(false);
+      }
+    };
+
+    // In a real app, you might not fetch if there's no token or if it's purely mock for admin
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await api.put('/users/profile', userData);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      alert("Failed to update profile. Please try again.");
+    }
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowPasswordChange(false);
-    // Mock password change
+    if (newPassword !== confirmPassword) {
+      alert("New passwords do not match.");
+      return;
+    }
+
+    try {
+      await api.post('/users/change-password', {
+        currentPassword,
+        newPassword
+      });
+      setShowPasswordChange(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      alert("Password updated successfully.");
+    } catch (error) {
+      console.error("Failed to change password", error);
+      alert("Failed to change password. Please check your current password and try again.");
+    }
   };
 
   return (
@@ -313,6 +360,8 @@ export default function Profile() {
                     <Input
                       id="currentPassword"
                       type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       className="mt-1 bg-white/80 border-slate-200"
                       placeholder="Enter current password"
                     />
@@ -324,6 +373,8 @@ export default function Profile() {
                     <Input
                       id="newPassword"
                       type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
                       className="mt-1 bg-white/80 border-slate-200"
                       placeholder="Enter new password"
                     />
@@ -335,6 +386,8 @@ export default function Profile() {
                     <Input
                       id="confirmPassword"
                       type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="mt-1 bg-white/80 border-slate-200"
                       placeholder="Confirm new password"
                     />
