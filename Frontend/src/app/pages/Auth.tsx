@@ -44,6 +44,7 @@ export default function Auth() {
       // Store token
       if (response.data && response.data.token) {
         localStorage.setItem("token", response.data.token);
+        localStorage.removeItem("isDemoMode");
       }
 
       // Redirect on success
