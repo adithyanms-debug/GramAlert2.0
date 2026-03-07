@@ -1,3 +1,10 @@
+-- Drop existing tables to ensure a clean slate
+DROP TABLE IF EXISTS comments CASCADE;
+DROP TABLE IF EXISTS escalations CASCADE;
+DROP TABLE IF EXISTS alerts CASCADE;
+DROP TABLE IF EXISTS grievances CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
