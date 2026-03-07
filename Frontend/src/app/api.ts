@@ -34,11 +34,20 @@ api.interceptors.response.use(
     (error: any) => {
         if (error.response && error.response.status === 401) {
             // 401 Unauthorized: Token might be expired or invalid
-            // clear the token
+            // clear the token and demo mode
             localStorage.removeItem('token');
             localStorage.removeItem('isDemoMode');
-            // Force redirect to login page
-            if (window.location.pathname !== '/') {
+
+            // Check if this is an authentication request (login/register)
+            const isAuthRequest = error.config.url?.includes('/auth/login') ||
+                error.config.url?.includes('/auth/register');
+
+            // Check if user is already at the landing or auth page
+            const isAtSafePage = window.location.pathname === '/' ||
+                window.location.pathname === '/auth';
+
+            // Only redirect if it's NOT an auth request and NOT already at a safe page
+            if (!isAuthRequest && !isAtSafePage) {
                 window.location.href = '/';
             }
         }
