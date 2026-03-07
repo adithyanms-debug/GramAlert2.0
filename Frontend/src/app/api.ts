@@ -36,7 +36,11 @@ api.interceptors.response.use(
             // 401 Unauthorized: Token might be expired or invalid
             // clear the token
             localStorage.removeItem('token');
-            // If we wanted to forcefully redirect, we would do it here. 
+            localStorage.removeItem('isDemoMode');
+            // Force redirect to login page
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }
