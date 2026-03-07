@@ -30,9 +30,15 @@ export default function Auth() {
     try {
       let response;
       if (isLogin) {
-        response = await api.post("/auth/login", { email, password });
+        response = await api.post("/auth/login", { username: email, password });
       } else {
-        response = await api.post("/auth/register", { name, email, password });
+        // Backend register expects: username, email, password, phone
+        response = await api.post("/auth/register", {
+          username: name.replace(/\s+/g, '').toLowerCase() || email.split('@')[0],
+          email,
+          password,
+          phone: "0000000000" // Default as front-end has no phone field
+        });
       }
 
       // Store token
@@ -54,6 +60,15 @@ export default function Auth() {
     setIsLoading(true);
     setTimeout(() => {
       navigate("/admin");
+    }, 800);
+  };
+
+  const handleVillagerDemo = () => {
+    setIsLoading(true);
+    localStorage.setItem("isDemoMode", "true");
+    localStorage.setItem("token", "demo-token");
+    setTimeout(() => {
+      navigate("/villager");
     }, 800);
   };
 
@@ -366,7 +381,7 @@ export default function Auth() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={handleSubmit}
+                    onClick={handleVillagerDemo}
                     disabled={isLoading}
                     className="w-full border-teal-300 hover:bg-teal-50"
                   >

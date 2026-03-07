@@ -20,6 +20,7 @@ import { Textarea } from "../components/ui/textarea";
 import { useLocation } from "react-router";
 import { useEffect } from "react";
 import api from "../api";
+import { MOCK_USER } from "../mockData";
 
 export default function Profile() {
   const location = useLocation();
@@ -46,10 +47,28 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
+      if (isDemoMode) {
+        setUserData({
+          ...MOCK_USER,
+          name: MOCK_USER.username,
+          joinedDate: new Date(MOCK_USER.joinedDate).toLocaleDateString(),
+          userId: MOCK_USER.id.toString(),
+          address: "123, Green Valley, Bangalore East"
+        });
+        setIsLoadingItems(false);
+        return;
+      }
+
       try {
-        const response = await api.get('/users/profile');
+        const response = await api.get('/users/me');
         if (response.data) {
-          setUserData(response.data);
+          setUserData({
+            ...response.data,
+            name: response.data.username,
+            joinedDate: new Date(response.data.joinedDate).toLocaleDateString(),
+            userId: response.data.id
+          });
         }
       } catch (error) {
         console.error("Failed to fetch profile", error);
@@ -64,7 +83,10 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      await api.put('/users/profile', userData);
+      await api.patch('/users/me', {
+        phone: userData.phone,
+        email: userData.email
+      });
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update profile", error);
@@ -74,25 +96,8 @@ export default function Profile() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      alert("New passwords do not match.");
-      return;
-    }
-
-    try {
-      await api.post('/users/change-password', {
-        currentPassword,
-        newPassword
-      });
-      setShowPasswordChange(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      alert("Password updated successfully.");
-    } catch (error) {
-      console.error("Failed to change password", error);
-      alert("Failed to change password. Please check your current password and try again.");
-    }
+    alert("Password change not implemented in current backend specification.");
+    setShowPasswordChange(false);
   };
 
   return (

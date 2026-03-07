@@ -44,14 +44,22 @@ export default function SubmitGrievance() {
     setErrorMsg("");
 
     try {
-      // Create FormData if we eventually add real files, but for now we'll send JSON
-      // assuming location is mapped if selectedLocation is true
       const payload = {
         title,
         category,
         description,
-        location: selectedLocation ? { lat: 12.9716, lng: 77.5946 } : null
+        latitude: selectedLocation ? 12.9716 : null,
+        longitude: selectedLocation ? 77.5946 : null
       };
+
+      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
+
+      if (isDemoMode) {
+        // Just simulate a delay and succeed
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        navigate("/villager");
+        return;
+      }
 
       await api.post("/grievances", payload);
 

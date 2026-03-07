@@ -1,59 +1,42 @@
+import { useState, useEffect } from "react";
+import api from "../api";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Bell, AlertCircle, Info, AlertTriangle } from "lucide-react";
-
-const mockAlerts = [
-  {
-    id: 1,
-    title: "Water Supply Maintenance",
-    message: "Water supply will be interrupted tomorrow from 10 AM to 2 PM for maintenance work in sector C. Please store water accordingly.",
-    severity: "warning",
-    time: "2 hours ago",
-    date: "Feb 28, 2026",
-  },
-  {
-    id: 2,
-    title: "Community Meeting",
-    message: "Monthly village meeting scheduled for this Sunday at 5 PM at the community center. All residents are encouraged to attend.",
-    severity: "info",
-    time: "5 hours ago",
-    date: "Feb 28, 2026",
-  },
-  {
-    id: 3,
-    title: "Road Work Completed",
-    message: "Main road repair work has been successfully completed. Traffic is now normal on all routes.",
-    severity: "success",
-    time: "1 day ago",
-    date: "Feb 27, 2026",
-  },
-  {
-    id: 4,
-    title: "Heavy Rain Alert",
-    message: "Meteorological department has issued a heavy rain warning for the next 48 hours. Please take necessary precautions.",
-    severity: "urgent",
-    time: "2 days ago",
-    date: "Feb 26, 2026",
-  },
-  {
-    id: 5,
-    title: "Health Camp Announcement",
-    message: "Free health check-up camp will be organized on March 5th at the primary health center from 9 AM to 4 PM.",
-    severity: "info",
-    time: "3 days ago",
-    date: "Feb 25, 2026",
-  },
-  {
-    id: 6,
-    title: "Electricity Maintenance",
-    message: "Scheduled power cut on March 1st from 6 AM to 10 AM for transformer maintenance in zones A and B.",
-    severity: "warning",
-    time: "4 days ago",
-    date: "Feb 24, 2026",
-  },
-];
+import { MOCK_USER, MOCK_ALERTS } from "../mockData";
 
 export default function Alerts() {
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [userName, setUserName] = useState("Loading...");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
+      if (isDemoMode) {
+        setUserName(MOCK_USER.username);
+        setAlerts(MOCK_ALERTS);
+        return;
+      }
+
+      try {
+        const userRes = await api.get('/users/me');
+        if (userRes.data && userRes.data.username) {
+          const name = userRes.data.username;
+          const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+          setUserName(capitalized);
+        }
+
+        const alertsRes = await api.get('/alerts');
+        if (alertsRes.data) {
+          setAlerts(alertsRes.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch alerts", error);
+      }
+    };
+    fetchData();
+  }, []);
+
   const getAlertConfig = (severity: string) => {
     const configs = {
       urgent: {
@@ -89,7 +72,7 @@ export default function Alerts() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout userName={userName}>
       <div className="space-y-6">
         {/* Header */}
         <motion.div
@@ -113,56 +96,67 @@ export default function Alerts() {
 
         {/* Alerts List */}
         <div className="space-y-4">
-          {mockAlerts.map((alert, index) => {
-            const config = getAlertConfig(alert.severity);
-            const Icon = config.icon;
+          {alerts.length === 0 ? (
+            <div className="text-center p-12 bg-white/50 rounded-xl border border-dashed border-slate-300">
+              <p className="text-slate-500">No community alerts found.</p>
+            </div>
+          ) : (
+            alerts.map((alert, index) => {
+              const severity = (alert.severity || "info").toLowerCase();
+              const config = getAlertConfig(severity);
+              const Icon = config.icon;
 
-            return (
-              <motion.div
-                key={alert.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-                whileHover={{ x: 4 }}
-                className={`p-6 rounded-xl bg-white/70 backdrop-blur-sm border ${config.borderColor} shadow-lg hover:shadow-xl transition-all`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`size-14 rounded-xl bg-gradient-to-br ${config.bgColor} flex items-center justify-center flex-shrink-0`}>
-                    <Icon className="size-7 text-white" />
-                  </div>
+              return (
+                <motion.div
+                  key={alert.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  whileHover={{ x: 4 }}
+                  className={`p-6 rounded-xl bg-white/70 backdrop-blur-sm border ${config.borderColor} shadow-lg hover:shadow-xl transition-all`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`size-14 rounded-xl bg-gradient-to-br ${config.bgColor} flex items-center justify-center flex-shrink-0`}>
+                      <Icon className="size-7 text-white" />
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-xl font-bold text-slate-800">
-                        {alert.title}
-                      </h3>
-                      <div className="text-right flex-shrink-0 ml-4">
-                        <p className="text-sm text-slate-500">{alert.time}</p>
-                        <p className="text-xs text-slate-400">{alert.date}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-xl font-bold text-slate-800">
+                          {alert.title}
+                        </h3>
+                        <div className="text-right flex-shrink-0 ml-4">
+                          <p className="text-sm text-slate-500">{new Date(alert.created_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-slate-400 capitalize">{severity}</p>
+                        </div>
+                      </div>
+
+                      <p className="text-slate-700 leading-relaxed mb-3">
+                        {alert.description}
+                      </p>
+
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${config.bgLight} ${config.textColor} capitalize`}
+                        >
+                          <div className="size-1.5 rounded-full bg-current" />
+                          {severity}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Category: {alert.category}
+                        </span>
                       </div>
                     </div>
-
-                    <p className="text-slate-700 leading-relaxed mb-3">
-                      {alert.message}
-                    </p>
-
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${config.bgLight} ${config.textColor} capitalize`}
-                      >
-                        <div className="size-1.5 rounded-full bg-current" />
-                        {alert.severity}
-                      </span>
-                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })
+          )}
         </div>
 
         {/* Info Card */}
         <motion.div
+          // ... (Info card code)
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}

@@ -2,11 +2,12 @@
 
 -- 1. Insert Users
 -- Passwords should be BCrypt-hashed 'password'
--- Hash: $2b$10$WqT.. (This is just an example hash for 'password')
+-- Hash for 'password': $2b$10$T2osgnVy53WxAymA1x.8E.eAti3Hg2mBxriVoYdX.j.KToeOKS4nK
 INSERT INTO users (username, password, email, phone, role) VALUES
-('villager', '$2b$10$EpzOhZ./D9gO.IuW//C0wOb1yA2s0QeFhS/g//H9u8t.B.O4h.mOa', 'villager@example.com', '9876543210', 'VILLAGER'),
-('admin', '$2b$10$EpzOhZ./D9gO.IuW//C0wOb1yA2s0QeFhS/g//H9u8t.B.O4h.mOa', 'admin@example.com', '1234567890', 'ADMIN')
+('villager', '$2b$10$T2osgnVy53WxAymA1x.8E.eAti3Hg2mBxriVoYdX.j.KToeOKS4nK', 'villager@example.com', '9876543210', 'VILLAGER'),
+('admin', '$2b$10$T2osgnVy53WxAymA1x.8E.eAti3Hg2mBxriVoYdX.j.KToeOKS4nK', 'admin@example.com', '1234567890', 'ADMIN')
 ON CONFLICT (username) DO NOTHING;
+
 
 -- 2. Insert Grievances
 INSERT INTO grievances (title, description, category, status, priority, user_id, latitude, longitude)

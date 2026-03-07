@@ -35,17 +35,18 @@ const adminNavItems = [
 
 export function DashboardLayout({
   children,
-  userName = "Rajesh Kumar",
+  userName = "User",
   notifications = 3,
 }: DashboardLayoutProps) {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   // Determine if current page is admin or villager
   const isAdmin = location.pathname.startsWith("/admin");
   const navItems = isAdmin ? adminNavItems : villagerNavItems;
   const userRole = isAdmin ? "Administrator" : "Villager";
-  const displayName = isAdmin ? "Administrator" : userName;
+  // Determine display name: logic remains mostly unchanged, relies on prop
+  const displayName = isAdmin ? (userName === "User" ? "Administrator" : userName) : userName;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50">
@@ -64,9 +65,8 @@ export function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 bottom-0 w-64 bg-white/80 backdrop-blur-xl border-r border-white/60 p-6 flex flex-col z-50 transition-transform duration-300 lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed left-0 top-0 bottom-0 w-64 bg-white/80 backdrop-blur-xl border-r border-white/60 p-6 flex flex-col z-50 transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Close button for mobile */}
         <button
@@ -94,11 +94,10 @@ export function DashboardLayout({
               <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}>
                 <motion.div
                   whileHover={{ x: 4 }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    isActive
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
                       ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg"
                       : "text-slate-600 hover:bg-white/60"
-                  }`}
+                    }`}
                 >
                   <item.icon className="size-5" />
                   <span className="font-medium">{item.label}</span>

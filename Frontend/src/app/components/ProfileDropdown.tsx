@@ -18,7 +18,7 @@ interface ProfileDropdownProps {
 }
 
 export function ProfileDropdown({
-  userName = "Rajesh Kumar",
+  userName = "User",
   userRole = "Villager",
   isAdmin = false,
 }: ProfileDropdownProps) {
@@ -26,6 +26,8 @@ export function ProfileDropdown({
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("isDemoMode");
     navigate("/");
   };
 

@@ -44,8 +44,8 @@ export const login = async (req, res, next) => {
     try {
         const { username, password } = req.body;
 
-        // Find user by username
-        const result = await query('SELECT * FROM users WHERE username = $1', [username]);
+        // Find user by username or email
+        const result = await query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
         if (result.rows.length === 0) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }

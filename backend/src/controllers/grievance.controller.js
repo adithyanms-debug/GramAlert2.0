@@ -7,32 +7,37 @@ export const getGrievances = async (req, res, next) => {
         const userId = req.user.id;
         const role = req.user.role;
 
-        let baseQuery = 'SELECT * FROM grievances WHERE 1=1';
+        let baseQuery = `
+            SELECT g.*, u.username as submitted_by 
+            FROM grievances g 
+            JOIN users u ON g.user_id = u.id 
+            WHERE 1=1
+        `;
         const values = [];
         let idx = 1;
 
         // Villagers only see their own
         if (role === 'VILLAGER') {
-            baseQuery += ` AND user_id = $${idx++}`;
+            baseQuery += ` AND g.user_id = $${idx++}`;
             values.push(userId);
         }
 
         if (status) {
-            baseQuery += ` AND status = $${idx++}`;
+            baseQuery += ` AND g.status = $${idx++}`;
             values.push(status);
         }
 
         if (category) {
-            baseQuery += ` AND category = $${idx++}`;
+            baseQuery += ` AND g.category = $${idx++}`;
             values.push(category);
         }
 
         if (priority) {
-            baseQuery += ` AND priority = $${idx++}`;
+            baseQuery += ` AND g.priority = $${idx++}`;
             values.push(priority);
         }
 
-        baseQuery += ' ORDER BY created_at DESC';
+        baseQuery += ' ORDER BY g.created_at DESC';
 
         const result = await query(baseQuery, values);
         res.json(result.rows);
