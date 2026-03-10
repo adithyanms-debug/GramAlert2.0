@@ -31,57 +31,69 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 
 const mockGrievances = [
   {
     id: "GRV-001",
     title: "Broken Street Light on Main Road",
+    description: "The street light near the community center has been broken for 3 days causing safety concerns for pedestrians during night time.",
     category: "Infrastructure",
     status: "In Progress",
     date: "Feb 25, 2026",
     submittedBy: "Rajesh Kumar",
     priority: "medium",
+    location: { lat: 28.6139, lng: 77.2090 },
   },
   {
     id: "GRV-002",
     title: "Water Logging Issue near School",
+    description: "Heavy water logging during rain causes difficulty for children and creates unhygienic conditions.",
     category: "Drainage",
     status: "Received",
     date: "Feb 26, 2026",
     submittedBy: "Priya Sharma",
     priority: "high",
+    location: { lat: 28.6129, lng: 77.2295 },
   },
   {
     id: "GRV-003",
     title: "Garbage Collection Delayed",
+    description: "Garbage collection was delayed by 2 days last week causing bad smell in the area.",
     category: "Sanitation",
     status: "Resolved",
     date: "Feb 20, 2026",
     submittedBy: "Amit Patel",
     priority: "low",
+    location: { lat: 28.6149, lng: 77.2170 },
   },
   {
     id: "GRV-004",
     title: "Pothole on Village Road",
+    description: "Large pothole causing accidents near the temple. Multiple vehicles have been damaged.",
     category: "Road Maintenance",
     status: "Received",
     date: "Feb 27, 2026",
     submittedBy: "Sunita Devi",
     priority: "high",
+    location: { lat: 28.6119, lng: 77.2210 },
   },
   {
     id: "GRV-005",
     title: "Water Supply Interruption",
+    description: "No water supply for 2 days in sector B affecting over 200 families.",
     category: "Water Supply",
     status: "In Progress",
     date: "Feb 24, 2026",
     submittedBy: "Vijay Singh",
     priority: "high",
+    location: { lat: 28.6159, lng: 77.2150 },
   },
 ];
 
 export default function AdminDashboard() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [selectedGrievance, setSelectedGrievance] = useState<typeof mockGrievances[0] | null>(null);
 
   return (
     <DashboardLayout>
@@ -313,13 +325,23 @@ export default function AdminDashboard() {
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-1 sm:gap-2">
                           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button variant="ghost" size="sm" className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedGrievance(grievance)}
+                              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
+                            >
                               <Eye className="size-4" />
                               <span className="hidden sm:inline ml-1">View</span>
                             </Button>
                           </motion.div>
                           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hidden sm:block">
-                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedGrievance(grievance)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2"
+                            >
                               <MessageSquare className="size-4 mr-1" />
                               Comment
                             </Button>
@@ -334,6 +356,12 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
       </div>
+      
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        isOpen={!!selectedGrievance}
+        onClose={() => setSelectedGrievance(null)}
+      />
     </DashboardLayout>
   );
 }

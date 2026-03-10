@@ -3,6 +3,8 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { AlertCircle, Clock, CheckCircle2, TrendingUp, FileText, Bell } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
+import { useState } from "react";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 
 const mockAlerts = [
   {
@@ -32,30 +34,40 @@ const mockGrievances = [
   {
     id: "GRV-001",
     title: "Broken Street Light on Main Road",
+    description: "The street light near the grocery store on Main Road has been non-functional for the past week. This has created safety concerns for pedestrians during nighttime. Immediate repair is needed.",
     category: "Infrastructure",
     status: "In Progress",
     date: "Feb 25, 2026",
     priority: "medium",
+    submittedBy: "Rajesh Kumar",
+    location: { lat: 28.6139, lng: 77.2090 }
   },
   {
     id: "GRV-002",
     title: "Water Logging Issue near School",
+    description: "Heavy water logging occurs near the primary school after every rainfall. This poses a health hazard and makes it difficult for children to access the school premises. Drainage system needs urgent attention.",
     category: "Drainage",
     status: "Received",
     date: "Feb 26, 2026",
     priority: "high",
+    submittedBy: "Rajesh Kumar",
+    location: { lat: 28.6149, lng: 77.2095 }
   },
   {
     id: "GRV-003",
     title: "Garbage Collection Delayed",
+    description: "Garbage collection in our locality has been irregular for the past two weeks. This has led to accumulation of waste and unpleasant odors. Regular collection schedule needs to be maintained.",
     category: "Sanitation",
     status: "Resolved",
     date: "Feb 20, 2026",
     priority: "low",
+    submittedBy: "Rajesh Kumar",
   },
 ];
 
 export default function VillagerDashboard() {
+  const [selectedGrievance, setSelectedGrievance] = useState(null);
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -221,7 +233,10 @@ export default function VillagerDashboard() {
                         <span>{grievance.date}</span>
                       </div>
                     </div>
-                    <button className="text-teal-600 hover:text-teal-700 font-medium text-xs sm:text-sm self-start sm:self-center">
+                    <button
+                      className="text-teal-600 hover:text-teal-700 font-medium text-xs sm:text-sm self-start sm:self-center"
+                      onClick={() => setSelectedGrievance(grievance)}
+                    >
                       View Details
                     </button>
                   </div>
@@ -231,6 +246,11 @@ export default function VillagerDashboard() {
           </div>
         </div>
       </div>
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        isOpen={!!selectedGrievance}
+        onClose={() => setSelectedGrievance(null)}
+      />
     </DashboardLayout>
   );
 }

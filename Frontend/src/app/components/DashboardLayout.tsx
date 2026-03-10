@@ -6,12 +6,14 @@ import {
   FileText,
   List,
   Bell,
-  Shield,
   Menu,
   X,
   Users,
+  UserPlus,
 } from "lucide-react";
 import { ProfileDropdown } from "./ProfileDropdown";
+import { NotificationsDropdown } from "./NotificationsDropdown";
+import { ROLE_THEMES } from "../constants";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -33,6 +35,13 @@ const adminNavItems = [
   { icon: Bell, label: "Broadcast Alerts", path: "/admin/alerts" },
 ];
 
+const superAdminNavItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/superadmin" },
+  { icon: UserPlus, label: "Manage Admins", path: "/superadmin/admins" },
+  { icon: FileText, label: "All Grievances", path: "/superadmin/grievances" },
+  { icon: Bell, label: "All Alerts", path: "/superadmin/alerts" },
+];
+
 export function DashboardLayout({
   children,
   userName = "Rajesh Kumar",
@@ -41,14 +50,33 @@ export function DashboardLayout({
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Determine if current page is admin or villager
+  // Determine role based on current path
+  const isSuperAdmin = location.pathname.startsWith("/superadmin");
   const isAdmin = location.pathname.startsWith("/admin");
-  const navItems = isAdmin ? adminNavItems : villagerNavItems;
-  const userRole = isAdmin ? "Administrator" : "Villager";
-  const displayName = isAdmin ? "Administrator" : userName;
+  const isVillager = !isAdmin && !isSuperAdmin;
+  
+  // Select appropriate configuration
+  let navItems = villagerNavItems;
+  let userRole = "Villager";
+  let displayName = userName;
+  let theme = ROLE_THEMES.villager;
+  
+  if (isSuperAdmin) {
+    navItems = superAdminNavItems;
+    userRole = "Super Administrator";
+    displayName = "Super Admin";
+    theme = ROLE_THEMES.superadmin;
+  } else if (isAdmin) {
+    navItems = adminNavItems;
+    userRole = "Administrator";
+    displayName = "Administrator";
+    theme = ROLE_THEMES.admin;
+  }
+
+  const LogoIcon = theme.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50">
+    <div className={`min-h-screen bg-gradient-to-br ${theme.bg}`}>
       {/* Mobile Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -78,10 +106,10 @@ export function DashboardLayout({
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 mb-8" onClick={() => setIsSidebarOpen(false)}>
-          <div className="size-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 flex items-center justify-center">
-            <Shield className="size-6 text-white" />
+          <div className={`size-10 rounded-xl bg-gradient-to-br ${theme.logo} flex items-center justify-center`}>
+            <LogoIcon className="size-6 text-white" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-teal-700 to-emerald-700 bg-clip-text text-transparent">
+          <span className={`text-xl font-bold bg-gradient-to-r ${theme.logoText} bg-clip-text text-transparent`}>
             GramAlert
           </span>
         </Link>
@@ -96,7 +124,7 @@ export function DashboardLayout({
                   whileHover={{ x: 4 }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg"
+                      ? `bg-gradient-to-r ${theme.active} text-white shadow-lg`
                       : "text-slate-600 hover:bg-white/60"
                   }`}
                 >
@@ -110,7 +138,7 @@ export function DashboardLayout({
 
         {/* User Profile */}
         <div className="pt-6 border-t border-slate-200">
-          <ProfileDropdown userName={displayName} userRole={userRole} isAdmin={isAdmin} />
+          <ProfileDropdown userName={displayName} userRole={userRole} />
         </div>
       </aside>
 
@@ -133,14 +161,7 @@ export function DashboardLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="relative p-2 rounded-xl hover:bg-white/60 transition-colors">
-                <Bell className="size-6 text-slate-600" />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 size-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                    {notifications}
-                  </span>
-                )}
-              </button>
+              <NotificationsDropdown />
             </div>
           </div>
         </header>

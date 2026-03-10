@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { Upload, MapPin, FileText, Send, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Send } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -14,28 +14,39 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useNavigate } from "react-router";
-
-const categories = [
-  "Infrastructure",
-  "Water Supply",
-  "Electricity",
-  "Sanitation",
-  "Drainage",
-  "Road Maintenance",
-  "Street Lights",
-  "Healthcare",
-  "Education",
-  "Other",
-];
+import { LocationPicker } from "../components/LocationPicker";
+import { toast } from "sonner";
+import { GRIEVANCE_CATEGORIES } from "../constants";
 
 export default function SubmitGrievance() {
-  const [selectedLocation, setSelectedLocation] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submission
+    if (!selectedLocation) {
+      toast.error("Please select a location on the map");
+      return;
+    }
+    toast.success("Grievance submitted successfully!");
     navigate("/villager");
+  };
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setSelectedLocation({ lat, lng });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
+      setUploadedImages(prev => [...prev, ...newImages]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -69,6 +80,7 @@ export default function SubmitGrievance() {
               id="title"
               placeholder="Brief description of the issue"
               className="h-12 bg-white/80 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
+              required
             />
           </motion.div>
 
@@ -82,12 +94,12 @@ export default function SubmitGrievance() {
             <Label htmlFor="category" className="text-slate-700 mb-2 block">
               Category
             </Label>
-            <Select>
+            <Select required>
               <SelectTrigger className="h-12 bg-white/80 border-slate-200">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
+                {GRIEVANCE_CATEGORIES.map((category) => (
                   <SelectItem key={category} value={category.toLowerCase()}>
                     {category}
                   </SelectItem>
@@ -111,6 +123,7 @@ export default function SubmitGrievance() {
               placeholder="Describe the issue in detail, including any relevant information..."
               rows={6}
               className="bg-white/80 border-slate-200 focus:border-teal-500 focus:ring-teal-500 resize-none"
+              required
             />
             <p className="text-xs text-slate-500 mt-2">
               Provide as much detail as possible to help us understand and resolve the issue
@@ -126,24 +139,54 @@ export default function SubmitGrievance() {
           >
             <Label className="text-slate-700 mb-3 block">Attach Images</Label>
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-teal-500 transition-colors cursor-pointer bg-white/40">
-              <div className="flex flex-col items-center gap-3">
-                <div className="size-16 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                  <ImageIcon className="size-8 text-white" />
+              <input
+                type="file"
+                id="image-upload"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="size-16 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                    <ImageIcon className="size-8 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-700">
+                      Drag and drop images here
+                    </p>
+                    <p className="text-sm text-slate-500 mt-1">
+                      or click to browse from your device
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" className="mt-2">
+                    <Upload className="size-4 mr-2" />
+                    Select Images
+                  </Button>
                 </div>
-                <div>
-                  <p className="font-medium text-slate-700">
-                    Drag and drop images here
-                  </p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    or click to browse from your device
-                  </p>
-                </div>
-                <Button type="button" variant="outline" className="mt-2">
-                  <Upload className="size-4 mr-2" />
-                  Select Images
-                </Button>
-              </div>
+              </label>
             </div>
+            {uploadedImages.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {uploadedImages.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={img}
+                      alt={`Upload ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border-2 border-slate-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 size-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <p className="text-xs text-slate-500 mt-2">
               Supported formats: JPG, PNG, GIF (Max 5MB per image)
             </p>
@@ -156,47 +199,15 @@ export default function SubmitGrievance() {
             transition={{ delay: 0.5 }}
             className="p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
           >
-            <Label className="text-slate-700 mb-3 block">Location</Label>
-            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-64 flex items-center justify-center relative">
-              {!selectedLocation ? (
-                <div className="text-center">
-                  <MapPin className="size-12 text-slate-400 mx-auto mb-3" />
-                  <p className="text-slate-600 mb-4">
-                    Select location on map
-                  </p>
-                  <Button
-                    type="button"
-                    onClick={() => setSelectedLocation(true)}
-                    className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
-                  >
-                    <MapPin className="size-4 mr-2" />
-                    Choose Location
-                  </Button>
-                </div>
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="size-16 rounded-full bg-red-500 mb-3 mx-auto animate-pulse" />
-                    <p className="font-medium text-slate-700">
-                      Location Selected
-                    </p>
-                    <p className="text-sm text-slate-600 mt-1">
-                      Lat: 12.9716, Long: 77.5946
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setSelectedLocation(false)}
-                      className="mt-3"
-                    >
-                      Change Location
-                    </Button>
-                  </div>
-                </div>
-              )}
+            <Label className="text-slate-700 mb-3 block">Location *</Label>
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-[500px] relative">
+              <LocationPicker
+                onLocationSelect={handleLocationSelect}
+                initialPosition={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : undefined}
+              />
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              Pin the exact location where the issue is present
+              Search for a location, use your current location, or click on the map to pin the exact location where the issue is present
             </p>
           </motion.div>
 

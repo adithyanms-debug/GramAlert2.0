@@ -10,6 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { useState } from "react";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+//import exampleImage from "figma:asset/c087eb43923d0c0c10d8bd27b31197157acdba2e.png";
 
 const mockGrievances = [
   {
@@ -19,7 +22,14 @@ const mockGrievances = [
     status: "In Progress",
     date: "Feb 25, 2026",
     priority: "medium",
-    description: "The street light near the community center has been broken for 3 days.",
+    description: "The street light near the community center has been broken for 3 days causing safety concerns for pedestrians during night time.",
+    location: "Main Road, Sector 5",
+    coordinates: { lat: 28.6139, lng: 77.2090 },
+    images: [],
+    updates: [
+      { date: "Feb 25, 2026", message: "Grievance submitted and registered", author: "System" },
+      { date: "Feb 26, 2026", message: "Assigned to maintenance team for inspection", author: "Admin Kumar" },
+    ],
   },
   {
     id: "GRV-002",
@@ -28,7 +38,12 @@ const mockGrievances = [
     status: "Received",
     date: "Feb 26, 2026",
     priority: "high",
-    description: "Heavy water logging during rain causes difficulty for children.",
+    description: "Heavy water logging during rain causes difficulty for children and creates unhygienic conditions.",
+    location: "School Area, Sector 2",
+    coordinates: { lat: 28.6129, lng: 77.2295 },
+    updates: [
+      { date: "Feb 26, 2026", message: "Grievance received and under review", author: "System" },
+    ],
   },
   {
     id: "GRV-003",
@@ -37,7 +52,14 @@ const mockGrievances = [
     status: "Resolved",
     date: "Feb 20, 2026",
     priority: "low",
-    description: "Garbage collection was delayed by 2 days last week.",
+    description: "Garbage collection was delayed by 2 days last week causing bad smell in the area.",
+    location: "Residential Block A",
+    coordinates: { lat: 28.6149, lng: 77.2170 },
+    updates: [
+      { date: "Feb 20, 2026", message: "Grievance submitted", author: "System" },
+      { date: "Feb 21, 2026", message: "Issue escalated to sanitation department", author: "Admin Sharma" },
+      { date: "Feb 22, 2026", message: "Resolved - Regular schedule restored", author: "Admin Sharma" },
+    ],
   },
   {
     id: "GRV-004",
@@ -46,7 +68,9 @@ const mockGrievances = [
     status: "Received",
     date: "Feb 27, 2026",
     priority: "high",
-    description: "Large pothole causing accidents near the temple.",
+    description: "Large pothole causing accidents near the temple. Multiple vehicles have been damaged.",
+    location: "Village Road, Sector 3",
+    coordinates: { lat: 28.6119, lng: 77.2210 },
   },
   {
     id: "GRV-005",
@@ -55,7 +79,13 @@ const mockGrievances = [
     status: "In Progress",
     date: "Feb 24, 2026",
     priority: "high",
-    description: "No water supply for 2 days in sector B.",
+    description: "No water supply for 2 days in sector B affecting over 200 families.",
+    location: "Sector 7, Zone A",
+    coordinates: { lat: 28.6159, lng: 77.2150 },
+    updates: [
+      { date: "Feb 24, 2026", message: "Grievance registered", author: "System" },
+      { date: "Feb 25, 2026", message: "Water department inspecting pipeline", author: "Admin Patel" },
+    ],
   },
   {
     id: "GRV-006",
@@ -64,15 +94,25 @@ const mockGrievances = [
     status: "Received",
     date: "Feb 28, 2026",
     priority: "medium",
-    description: "Multiple stray dogs causing safety concerns.",
+    description: "Multiple stray dogs causing safety concerns for children and elderly residents.",
+    location: "Park Area, Sector 4",
+    coordinates: { lat: 28.6099, lng: 77.2190 },
   },
 ];
 
 export default function MyGrievances() {
+  const [selectedGrievance, setSelectedGrievance] = useState<typeof mockGrievances[0] | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const statusColors = {
     Received: "bg-amber-100 text-amber-700 border-amber-200",
     "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
     Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  };
+
+  const handleViewDetails = (grievance: typeof mockGrievances[0]) => {
+    setSelectedGrievance(grievance);
+    setDialogOpen(true);
   };
 
   return (
@@ -138,7 +178,7 @@ export default function MyGrievances() {
                   <h3 className="text-xl font-bold text-slate-800 mb-2">
                     {grievance.title}
                   </h3>
-                  <p className="text-slate-600 leading-relaxed mb-3">
+                  <p className="text-slate-600 leading-relaxed mb-3 line-clamp-2">
                     {grievance.description}
                   </p>
                   <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -149,7 +189,10 @@ export default function MyGrievances() {
                     <span className="capitalize">Priority: {grievance.priority}</span>
                   </div>
                 </div>
-                <Button className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700">
+                <Button 
+                  onClick={() => handleViewDetails(grievance)}
+                  className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
+                >
                   View Details
                 </Button>
               </div>
@@ -185,6 +228,12 @@ export default function MyGrievances() {
           ))}
         </div>
       </div>
+
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </DashboardLayout>
   );
 }
