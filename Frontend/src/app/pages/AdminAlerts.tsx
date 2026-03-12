@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
+import api from "../api";
 import {
   Bell,
   Plus,
@@ -32,64 +33,31 @@ import {
 } from "../components/ui/select";
 import { toast } from "sonner";
 
-const mockAlerts = [
-  {
-    id: "ALT-001",
-    title: "Water Supply Maintenance",
-    message: "Water supply will be interrupted from 10 AM to 2 PM tomorrow for maintenance work.",
-    severity: "warning",
-    date: "Mar 6, 2026",
-    time: "09:30 AM",
-    recipients: 234,
-  },
-  {
-    id: "ALT-002",
-    title: "Community Meeting Announcement",
-    message: "Monthly community meeting scheduled for March 10th at 6 PM in the community hall.",
-    severity: "info",
-    date: "Mar 5, 2026",
-    time: "03:15 PM",
-    recipients: 456,
-  },
-  {
-    id: "ALT-003",
-    title: "Road Closure Notice",
-    message: "Main Road will be closed for repairs from March 8-10. Please use alternative routes.",
-    severity: "urgent",
-    date: "Mar 4, 2026",
-    time: "11:00 AM",
-    recipients: 789,
-  },
-  {
-    id: "ALT-004",
-    title: "Vaccination Drive",
-    message: "Free vaccination drive for children under 5 years on March 12th at the health center.",
-    severity: "info",
-    date: "Mar 3, 2026",
-    time: "02:45 PM",
-    recipients: 567,
-  },
-  {
-    id: "ALT-005",
-    title: "Heavy Rain Alert",
-    message: "Heavy rainfall expected in the next 48 hours. Residents in low-lying areas should take precautions.",
-    severity: "urgent",
-    date: "Mar 2, 2026",
-    time: "08:20 AM",
-    recipients: 890,
-  },
-];
-
 const severityConfig: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
   info: {
     icon: Info,
     color: "text-blue-600",
     bg: "bg-blue-100",
   },
+  low: {
+    icon: Info,
+    color: "text-blue-600",
+    bg: "bg-blue-100",
+  },
+  medium: {
+    icon: AlertTriangle,
+    color: "text-amber-600",
+    bg: "bg-amber-100",
+  },
   warning: {
     icon: AlertTriangle,
     color: "text-amber-600",
     bg: "bg-amber-100",
+  },
+  high: {
+    icon: AlertCircle,
+    color: "text-red-600",
+    bg: "bg-red-100",
   },
   urgent: {
     icon: AlertCircle,
@@ -100,12 +68,70 @@ const severityConfig: Record<string, { icon: LucideIcon; color: string; bg: stri
 
 export default function AdminAlerts() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newAlert, setNewAlert] = useState({
+    title: "",
+    description: "",
+    severity: "info"
+  });
 
-  const handleCreateAlert = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success("Alert broadcast successfully!");
-    setIsAlertModalOpen(false);
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("alerts");
+      setAlerts(res.data);
+    } catch (error) {
+      console.error("Failed to fetch alerts", error);
+      toast.error("Could not load alerts");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const handleCreateAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAlert.title || !newAlert.description) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      await api.post("alerts", newAlert);
+      toast.success("Alert broadcast successfully!");
+      setIsAlertModalOpen(false);
+      setNewAlert({ title: "", description: "", severity: "info" });
+      fetchAlerts();
+    } catch (error) {
+      console.error("Failed to create alert", error);
+      toast.error("Failed to publish alert");
+    }
+  };
+
+  const handleDeleteAlert = async (id: number | string) => {
+    try {
+      await api.delete(`alerts/${id}`);
+      toast.success("Alert deleted successfully");
+      fetchAlerts();
+    } catch (error) {
+      console.error("Failed to delete alert", error);
+      toast.error("Failed to delete alert");
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="size-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -146,6 +172,8 @@ export default function AdminAlerts() {
                       id="alert-title"
                       placeholder="Enter alert title"
                       className="bg-white/80"
+                      value={newAlert.title}
+                      onChange={(e) => setNewAlert({ ...newAlert, title: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -155,18 +183,24 @@ export default function AdminAlerts() {
                       placeholder="Enter alert message"
                       rows={4}
                       className="bg-white/80 resize-none"
+                      value={newAlert.description}
+                      onChange={(e) => setNewAlert({ ...newAlert, description: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="severity">Severity Level</Label>
-                    <Select>
+                    <Select
+                      value={newAlert.severity}
+                      onValueChange={(val) => setNewAlert({ ...newAlert, severity: val })}
+                    >
                       <SelectTrigger className="bg-white/80">
                         <SelectValue placeholder="Select severity" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="info">Info</SelectItem>
-                        <SelectItem value="warning">Warning</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -195,64 +229,67 @@ export default function AdminAlerts() {
               Alert History
             </h3>
             <p className="text-sm text-slate-600">
-              View all previously sent alerts
+              Showing {alerts.length} previously sent alerts
             </p>
           </div>
 
           <div className="space-y-4">
-            {mockAlerts.map((alert, index) => {
-              const config = severityConfig[alert.severity];
-              const SeverityIcon = config.icon;
-              
-              return (
-                <motion.div
-                  key={alert.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + index * 0.05 }}
-                  whileHover={{ scale: 1.01 }}
-                  className="p-4 rounded-xl bg-white/60 border border-white/60 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`size-12 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
-                      <SeverityIcon className={`size-6 ${config.color}`} />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-slate-800 mb-1">{alert.title}</h4>
-                          <p className="text-sm text-slate-600 mb-2">{alert.message}</p>
-                          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Bell className="size-3" />
-                              {alert.recipients} recipients
-                            </span>
-                            <span>•</span>
-                            <span>{alert.date} at {alert.time}</span>
-                            <span>•</span>
-                            <span className="font-mono">{alert.id}</span>
+            {alerts.length === 0 ? (
+              <p className="text-center py-8 text-slate-500">No alert history found.</p>
+            ) : (
+              alerts.map((alert, index) => {
+                const severityKey = (alert.severity || "info").toLowerCase();
+                const config = severityConfig[severityKey] || severityConfig.info;
+                const SeverityIcon = config.icon;
+
+                return (
+                  <motion.div
+                    key={alert.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
+                    whileHover={{ scale: 1.01 }}
+                    className="p-4 rounded-xl bg-white/60 border border-white/60 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`size-12 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
+                        <SeverityIcon className={`size-6 ${config.color}`} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-slate-800 mb-1">{alert.title}</h4>
+                            <p className="text-sm text-slate-600 mb-2">{alert.description}</p>
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <Bell className="size-3" />
+                                {alert.recipients || 'All'} recipients
+                              </span>
+                              <span>•</span>
+                              <span>{new Date(alert.created_at).toLocaleDateString()} at {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>•</span>
+                              <span className="font-mono">ALT-{alert.id}</span>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2">
-                              <Eye className="size-4" />
-                            </Button>
-                          </motion.div>
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2">
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                              onClick={() => handleDeleteAlert(alert.id)}
+                            >
                               <Trash2 className="size-4" />
                             </Button>
-                          </motion.div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </motion.div>
       </div>

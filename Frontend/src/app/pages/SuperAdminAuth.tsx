@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Shield, Mail, Lock, ArrowLeft, Sparkles, Check, Crown } from "lucide-react";
+import { Shield, Mail, Lock, ArrowLeft, Sparkles, Check, Crown, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import api from "../api";
+import { toast } from "sonner";
 
 const features = [
   "Create & Manage Admins",
@@ -19,20 +21,37 @@ export default function SuperAdminAuth() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Check credentials: superadmin@123 with password: password
-    if (email === "superadmin@123" && password === "password") {
+
+    try {
+      const response = await api.post("auth/login", {
+        username: email, // Backend uses username field for login, which can be email
+        password: password,
+        type: 'superadmin'
+      });
+
+      const { token, user } = response.data;
+
+      if (user.role !== 'SUPERADMIN') {
+        toast.error("Access denied: You do not have Super Admin privileges.");
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      toast.success("Login successful! Welcome to Super Admin Portal.");
+
       setTimeout(() => {
         navigate("/superadmin");
-      }, 800);
-    } else {
-      setTimeout(() => {
-        setIsLoading(false);
-        alert("Invalid credentials. Try: superadmin@123 / password");
-      }, 800);
+      }, 500);
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Invalid credentials. Please try again.";
+      toast.error(message);
+      setIsLoading(false);
     }
   };
 
@@ -97,7 +116,7 @@ export default function SuperAdminAuth() {
             className="hidden md:flex relative bg-gradient-to-br from-purple-600 to-violet-600 p-8 lg:p-12 flex-col justify-between text-white overflow-hidden"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.1),transparent)]" />
-            
+
             {/* Floating Icons Animation */}
             <motion.div
               animate={{ y: [0, -10, 0] }}
@@ -106,7 +125,7 @@ export default function SuperAdminAuth() {
             >
               <Crown className="size-8" />
             </motion.div>
-            
+
             <div className="relative z-10">
               <motion.div
                 initial={{ scale: 0 }}
@@ -271,9 +290,8 @@ export default function SuperAdminAuth() {
               className="mt-6 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200"
             >
               <p className="text-sm text-slate-700 text-center">
-                <strong className="text-purple-700">Demo Credentials:</strong><br />
-                Email: <code className="text-purple-600 font-mono">superadmin@123</code><br />
-                Password: <code className="text-purple-600 font-mono">password</code>
+                <strong className="text-purple-700">Login Note:</strong><br />
+                Use your Super Admin credentials to access the system.
               </p>
             </motion.div>
           </motion.div>

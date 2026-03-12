@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import {
@@ -18,34 +18,77 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useLocation } from "react-router";
+import api from "../api";
+import { toast } from "sonner";
 
 export default function Profile() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  
-  // Mock user data
+
+  // Real user data state
   const [userData, setUserData] = useState({
-    name: isAdmin ? "Administrator" : "Rajesh Kumar",
-    email: isAdmin ? "admin@gramalert.gov.in" : "rajesh.kumar@email.com",
-    phone: isAdmin ? "+91 98765 43210" : "+91 98765 12345",
-    address: "Village: Bannur, Taluk: Mysore, District: Mysore, State: Karnataka",
+    name: isAdmin ? "Administrator" : "Loading...",
+    username: "",
+    email: "",
+    phone: "",
+    address: "",
     role: isAdmin ? "Administrator" : "Villager",
-    joinedDate: "January 15, 2025",
-    userId: isAdmin ? "ADMIN-001" : "VIL-00234",
+    joinedDate: "",
+    userId: "",
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Mock save - in real app would save to backend
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoadingItems, setIsLoadingItems] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('users/me');
+        if (response.data) {
+          setUserData({
+            ...response.data,
+            name: response.data.username || "User",
+            joinedDate: new Date(response.data.joinedDate || response.data.created_at).toLocaleDateString(),
+            userId: response.data.id,
+            address: response.data.address || "N/A"
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+        if (userData.name === "Loading...") {
+          setUserData(prev => ({ ...prev, name: "User" }));
+        }
+      } finally {
+        setIsLoadingItems(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await api.patch('users/me', {
+        phone: userData.phone,
+        email: userData.email
+      });
+      setIsEditing(false);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      toast.error("Failed to update profile");
+    }
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
+    toast.error("Password change not implemented in current backend specification.");
     setShowPasswordChange(false);
-    // Mock password change
   };
 
   return (
@@ -109,22 +152,6 @@ export default function Profile() {
                     {userData.joinedDate}
                   </span>
                 </div>
-                {!isAdmin && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Grievances</span>
-                      <span className="text-sm font-semibold text-teal-600">
-                        12 Total
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Resolved</span>
-                      <span className="text-sm font-semibold text-emerald-600">
-                        8 Completed
-                      </span>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 
@@ -313,6 +340,8 @@ export default function Profile() {
                     <Input
                       id="currentPassword"
                       type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       className="mt-1 bg-white/80 border-slate-200"
                       placeholder="Enter current password"
                     />
@@ -324,6 +353,8 @@ export default function Profile() {
                     <Input
                       id="newPassword"
                       type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
                       className="mt-1 bg-white/80 border-slate-200"
                       placeholder="Enter new password"
                     />
@@ -335,6 +366,8 @@ export default function Profile() {
                     <Input
                       id="confirmPassword"
                       type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="mt-1 bg-white/80 border-slate-200"
                       placeholder="Confirm new password"
                     />
@@ -357,68 +390,6 @@ export default function Profile() {
                 </form>
               </motion.div>
             )}
-
-            {/* Account Activity */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="size-10 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                  <Calendar className="size-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Recent Activity
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {isAdmin ? (
-                  <>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Created new alert
-                      </span>
-                      <span className="text-xs text-slate-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Resolved 3 grievances
-                      </span>
-                      <span className="text-xs text-slate-500">1 day ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Updated profile information
-                      </span>
-                      <span className="text-xs text-slate-500">3 days ago</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Submitted new grievance
-                      </span>
-                      <span className="text-xs text-slate-500">1 day ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Viewed community alerts
-                      </span>
-                      <span className="text-xs text-slate-500">2 days ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Updated profile information
-                      </span>
-                      <span className="text-xs text-slate-500">1 week ago</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
           </div>
         </div>
       </motion.div>

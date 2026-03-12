@@ -5,6 +5,7 @@ import { Shield, Mail, Lock, ArrowLeft, Sparkles, Check } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import api from "../api";
 
 const features = [
   "Manage Grievances",
@@ -19,20 +20,36 @@ export default function AdminAuth() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Check credentials: admin@123 with password: password
-    if (email === "admin@123" && password === "password") {
-      setTimeout(() => {
+
+    try {
+      // Backend login expects username/email and password
+      const response = await api.post("auth/login", {
+        username: email,
+        password,
+        type: 'admin'
+      });
+
+      // Store token
+      if (response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      // Check role and redirect
+      const role = response.data.user.role;
+      if (role === "SUPERADMIN") {
+        navigate("/superadmin");
+      } else if (role === "ADMIN") {
         navigate("/admin");
-      }, 800);
-    } else {
-      setTimeout(() => {
-        setIsLoading(false);
-        alert("Invalid credentials. Try: admin@123 / password");
-      }, 800);
+      } else {
+        navigate("/villager");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      alert(error.response?.data?.message || "Invalid credentials. Try: admin / password or superadmin / GramAlert@2026");
+      setIsLoading(false);
     }
   };
 
@@ -97,7 +114,7 @@ export default function AdminAuth() {
             className="hidden md:flex relative bg-gradient-to-br from-blue-600 to-indigo-600 p-8 lg:p-12 flex-col justify-between text-white overflow-hidden"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.1),transparent)]" />
-            
+
             {/* Floating Icons Animation */}
             <motion.div
               animate={{ y: [0, -10, 0] }}
@@ -106,7 +123,7 @@ export default function AdminAuth() {
             >
               <Sparkles className="size-8" />
             </motion.div>
-            
+
             <div className="relative z-10">
               <motion.div
                 initial={{ scale: 0 }}
@@ -268,9 +285,9 @@ export default function AdminAuth() {
               className="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200"
             >
               <p className="text-sm text-slate-700 text-center">
-                <strong className="text-blue-700">Demo Credentials:</strong><br />
-                Email: <code className="text-blue-600 font-mono">admin@123</code><br />
-                Password: <code className="text-blue-600 font-mono">password</code>
+                <strong className="text-blue-700">Official Credentials:</strong><br />
+                Admin: <code className="text-blue-600 font-mono">admin</code><br />
+                Super Admin: <code className="text-blue-600 font-mono">superadmin</code>
               </p>
             </motion.div>
           </motion.div>

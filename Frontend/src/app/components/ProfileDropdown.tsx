@@ -24,21 +24,21 @@ const avatarColors: Record<string, string> = {
 };
 
 export function ProfileDropdown({
-  userName = "Rajesh Kumar",
+  userName = "User",
   userRole = "Villager",
 }: ProfileDropdownProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Determine role based on current path
   const isSuperAdmin = location.pathname.startsWith("/superadmin");
   const isAdminUser = location.pathname.startsWith("/admin") && !isSuperAdmin;
-  
+
   let profilePath = "/villager/profile";
   let settingsPath = "/villager/settings";
   let avatarColor = avatarColors.villager;
-  
+
   if (isSuperAdmin) {
     profilePath = "/superadmin/profile";
     settingsPath = "/superadmin/settings";
@@ -50,6 +50,7 @@ export function ProfileDropdown({
   }
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     navigate("/");
   };
 

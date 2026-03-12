@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
+import api from "../api";
 import {
   User,
   Mail,
@@ -26,13 +27,13 @@ export default function VillagerProfile() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   const [userData, setUserData] = useState({
-    name: "Rajesh Kumar",
-    email: "rajesh.kumar@email.com",
-    phone: "+91 98765 12345",
-    address: "Village: Bannur, Taluk: Mysore, District: Mysore, State: Karnataka",
-    role: "Villager",
-    joinedDate: "January 15, 2025",
-    userId: "VIL-00234",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    role: "VILLAGER",
+    joinedDate: "",
+    userId: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -41,9 +42,51 @@ export default function VillagerProfile() {
     confirm: "",
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Profile updated successfully!");
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("users/me");
+      const data = res.data;
+      setUserData({
+        name: data.username || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        address: data.address || "Address not provided",
+        role: data.role || "VILLAGER",
+        joinedDate: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) : "Unknown",
+        userId: `VIL-${data.id?.toString().padStart(5, '0')}`,
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile", error);
+      toast.error("Could not load profile data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useState(() => {
+    fetchProfile();
+  });
+
+  const handleSave = async () => {
+    try {
+      await api.patch("users/me", {
+        username: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+      });
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      toast.error("Failed to update profile");
+    }
   };
 
   const handlePasswordChange = (e: React.FormEvent) => {
@@ -60,6 +103,16 @@ export default function VillagerProfile() {
     setPasswordData({ current: "", new: "", confirm: "" });
     toast.success("Password changed successfully!");
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="size-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -136,19 +189,15 @@ export default function VillagerProfile() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-teal-50 to-emerald-50">
                   <span className="text-sm text-slate-600">Total Grievances</span>
-                  <span className="text-lg font-bold text-teal-600">12</span>
+                  <span className="text-lg font-bold text-teal-600">-</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-green-50">
                   <span className="text-sm text-slate-600">Resolved</span>
-                  <span className="text-lg font-bold text-emerald-600">8</span>
+                  <span className="text-lg font-bold text-emerald-600">-</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50">
                   <span className="text-sm text-slate-600">In Progress</span>
-                  <span className="text-lg font-bold text-amber-600">3</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
-                  <span className="text-sm text-slate-600">Pending</span>
-                  <span className="text-lg font-bold text-blue-600">1</span>
+                  <span className="text-lg font-bold text-amber-600">-</span>
                 </div>
               </div>
             </div>
@@ -411,31 +460,8 @@ export default function VillagerProfile() {
                   Recent Activity
                 </h3>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                  <span className="text-sm text-slate-600">
-                    Submitted new grievance
-                  </span>
-                  <span className="text-xs text-slate-500">1 day ago</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                  <span className="text-sm text-slate-600">
-                    Viewed community alerts
-                  </span>
-                  <span className="text-xs text-slate-500">2 days ago</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                  <span className="text-sm text-slate-600">
-                    Updated profile information
-                  </span>
-                  <span className="text-xs text-slate-500">1 week ago</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                  <span className="text-sm text-slate-600">
-                    Grievance #234 resolved
-                  </span>
-                  <span className="text-xs text-slate-500">2 weeks ago</span>
-                </div>
+              <div className="space-y-3 text-center py-8">
+                <p className="text-sm text-slate-500 italic">No recent activity found</p>
               </div>
             </motion.div>
 
@@ -455,7 +481,7 @@ export default function VillagerProfile() {
                     Active Community Member
                   </h4>
                   <p className="text-sm text-slate-600">
-                    You've submitted 12 grievances and contributed to making your village better!
+                    You are an active community member contributing to making your village better!
                   </p>
                 </div>
               </div>

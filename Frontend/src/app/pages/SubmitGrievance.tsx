@@ -14,23 +14,54 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useNavigate } from "react-router";
+import api from "../api";
 import { LocationPicker } from "../components/LocationPicker";
 import { toast } from "sonner";
 import { GRIEVANCE_CATEGORIES } from "../constants";
 
 export default function SubmitGrievance() {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedLocation) {
       toast.error("Please select a location on the map");
       return;
     }
-    toast.success("Grievance submitted successfully!");
-    navigate("/villager");
+
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const payload = {
+        title,
+        category,
+        description,
+        latitude: selectedLocation.lat,
+        longitude: selectedLocation.lng
+      };
+
+      await api.post("grievances", payload);
+
+      // Navigate on success
+      toast.success("Grievance submitted successfully!");
+      navigate("/villager");
+    } catch (error: any) {
+      console.error("Failed to submit grievance:", error);
+      const message = error.response?.data?.message || "Failed to submit. Please try again.";
+      setErrorMsg(message);
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLocationSelect = (lat: number, lng: number) => {
@@ -78,6 +109,8 @@ export default function SubmitGrievance() {
             </Label>
             <Input
               id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Brief description of the issue"
               className="h-12 bg-white/80 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
               required
@@ -94,14 +127,14 @@ export default function SubmitGrievance() {
             <Label htmlFor="category" className="text-slate-700 mb-2 block">
               Category
             </Label>
-            <Select required>
+            <Select value={category} onValueChange={setCategory} required>
               <SelectTrigger className="h-12 bg-white/80 border-slate-200">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
-                {GRIEVANCE_CATEGORIES.map((category) => (
-                  <SelectItem key={category} value={category.toLowerCase()}>
-                    {category}
+                {GRIEVANCE_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat.toLowerCase()}>
+                    {cat}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -120,6 +153,8 @@ export default function SubmitGrievance() {
             </Label>
             <Textarea
               id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the issue in detail, including any relevant information..."
               rows={6}
               className="bg-white/80 border-slate-200 focus:border-teal-500 focus:ring-teal-500 resize-none"
@@ -211,6 +246,17 @@ export default function SubmitGrievance() {
             </p>
           </motion.div>
 
+          {/* Error Message */}
+          {errorMsg && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 font-medium"
+            >
+              {errorMsg}
+            </motion.div>
+          )}
+
           {/* Submit Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -221,10 +267,19 @@ export default function SubmitGrievance() {
             <Button
               type="submit"
               size="lg"
+              disabled={isSubmitting}
               className="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 shadow-lg"
             >
-              <Send className="size-5 mr-2" />
-              Submit Grievance
+              {isSubmitting ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="size-5 border-2 border-white/30 border-t-white rounded-full mr-2"
+                />
+              ) : (
+                <Send className="size-5 mr-2" />
+              )}
+              {isSubmitting ? "Submitting..." : "Submit Grievance"}
             </Button>
             <Button
               type="button"

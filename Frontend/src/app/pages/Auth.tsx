@@ -5,6 +5,7 @@ import { Shield, Mail, Lock, User, ArrowLeft, Sparkles, Check } from "lucide-rea
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import api from "../api";
 
 const features = [
   "Secure & Private",
@@ -18,24 +19,55 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
     setIsLoading(true);
-    
-    // Check credentials: villager@123 with password: password
-    if (email === "villager@123" && password === "password") {
-      setTimeout(() => {
+
+    try {
+      let response;
+      if (isLogin) {
+        response = await api.post("auth/login", {
+          username: email,
+          password,
+          type: 'villager'
+        });
+      } else {
+        // Backend register expects: username, email, password, phone
+        response = await api.post("auth/register", {
+          username: name.replace(/\s+/g, '').toLowerCase() || email.split('@')[0],
+          email,
+          password,
+          phone: "0000000000" // Default as front-end has no phone field
+        });
+      }
+
+      // Store token
+      if (response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      // Redirect on success
+      const userRole = response.data.user.role;
+      if (userRole === "SUPERADMIN") {
+        navigate("/superadmin");
+      } else if (userRole === "ADMIN") {
+        navigate("/admin");
+      } else {
         navigate("/villager");
-      }, 800);
-    } else {
-      setTimeout(() => {
-        setIsLoading(false);
-        alert("Invalid credentials. Try: villager@123 / password");
-      }, 800);
+      }
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      setErrorMsg(error.response?.data?.message || "Authentication failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50 flex items-center justify-center p-6 relative overflow-hidden">
@@ -98,7 +130,7 @@ export default function Auth() {
             className="hidden md:flex relative bg-gradient-to-br from-teal-600 to-emerald-600 p-8 lg:p-12 flex-col justify-between text-white overflow-hidden"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.1),transparent)]" />
-            
+
             {/* Floating Icons Animation */}
             <motion.div
               animate={{ y: [0, -10, 0] }}
@@ -107,7 +139,7 @@ export default function Auth() {
             >
               <Sparkles className="size-8" />
             </motion.div>
-            
+
             <div className="relative z-10">
               <motion.div
                 initial={{ scale: 0 }}
@@ -205,6 +237,8 @@ export default function Auth() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
                       <Input
                         id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your full name"
                         className="pl-11 h-12 bg-white/60 border-slate-200 focus:border-teal-500 focus:ring-teal-500 transition-all"
                       />
@@ -224,7 +258,7 @@ export default function Auth() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
                   <Input
                     id="email"
-                    type="text"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
@@ -252,6 +286,16 @@ export default function Auth() {
                   />
                 </div>
               </motion.div>
+
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100"
+                >
+                  {errorMsg}
+                </motion.div>
+              )}
 
               {isLogin && (
                 <motion.div
@@ -319,20 +363,6 @@ export default function Auth() {
               </motion.div>
             </form>
 
-            {isLogin && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="mt-6 p-4 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200"
-              >
-                <p className="text-sm text-slate-700 text-center">
-                  <strong className="text-teal-700">Demo Login:</strong><br />
-                  <span className="text-xs">Email:</span> <code className="text-teal-600 font-mono text-sm">villager@123</code><br />
-                  <span className="text-xs">Password:</span> <code className="text-teal-600 font-mono text-sm">password</code>
-                </p>
-              </motion.div>
-            )}
           </motion.div>
         </div>
       </motion.div>

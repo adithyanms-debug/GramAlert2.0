@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../api";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import {
@@ -33,70 +34,87 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 
-const mockGrievances = [
-  {
-    id: "GRV-001",
-    title: "Broken Street Light on Main Road",
-    description: "The street light near the community center has been broken for 3 days causing safety concerns for pedestrians during night time.",
-    category: "Infrastructure",
-    status: "In Progress",
-    date: "Feb 25, 2026",
-    submittedBy: "Rajesh Kumar",
-    priority: "medium",
-    location: { lat: 28.6139, lng: 77.2090 },
-  },
-  {
-    id: "GRV-002",
-    title: "Water Logging Issue near School",
-    description: "Heavy water logging during rain causes difficulty for children and creates unhygienic conditions.",
-    category: "Drainage",
-    status: "Received",
-    date: "Feb 26, 2026",
-    submittedBy: "Priya Sharma",
-    priority: "high",
-    location: { lat: 28.6129, lng: 77.2295 },
-  },
-  {
-    id: "GRV-003",
-    title: "Garbage Collection Delayed",
-    description: "Garbage collection was delayed by 2 days last week causing bad smell in the area.",
-    category: "Sanitation",
-    status: "Resolved",
-    date: "Feb 20, 2026",
-    submittedBy: "Amit Patel",
-    priority: "low",
-    location: { lat: 28.6149, lng: 77.2170 },
-  },
-  {
-    id: "GRV-004",
-    title: "Pothole on Village Road",
-    description: "Large pothole causing accidents near the temple. Multiple vehicles have been damaged.",
-    category: "Road Maintenance",
-    status: "Received",
-    date: "Feb 27, 2026",
-    submittedBy: "Sunita Devi",
-    priority: "high",
-    location: { lat: 28.6119, lng: 77.2210 },
-  },
-  {
-    id: "GRV-005",
-    title: "Water Supply Interruption",
-    description: "No water supply for 2 days in sector B affecting over 200 families.",
-    category: "Water Supply",
-    status: "In Progress",
-    date: "Feb 24, 2026",
-    submittedBy: "Vijay Singh",
-    priority: "high",
-    location: { lat: 28.6159, lng: 77.2150 },
-  },
-];
-
 export default function AdminDashboard() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-  const [selectedGrievance, setSelectedGrievance] = useState<typeof mockGrievances[0] | null>(null);
+  const [userName, setUserName] = useState("Loading...");
+  const [grievances, setGrievances] = useState<any[]>([]);
+  const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
+
+  // Alert form state
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertDescription, setAlertDescription] = useState("");
+  const [alertCategory, setAlertCategory] = useState("emergency");
+  const [alertSeverity, setAlertSeverity] = useState("medium");
+  const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const userRes = await api.get('users/me');
+      if (userRes.data && userRes.data.username) {
+        const name = userRes.data.username;
+        const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+        setUserName(capitalized);
+      }
+
+      const grievRes = await api.get('grievances');
+      if (grievRes.data) {
+        setGrievances(grievRes.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch admin dashboard data", error);
+      if (userName === "Loading...") setUserName("Administrator");
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleStatusUpdate = async (id: number, newStatus: string) => {
+    try {
+      const statusMap: Record<string, string> = {
+        'received': 'Received',
+        'in-progress': 'In Progress',
+        'resolved': 'Resolved'
+      };
+      await api.patch(`grievances/${id}/status`, { status: statusMap[newStatus] || newStatus });
+      fetchData(); // Refresh list
+    } catch (error) {
+      console.error("Failed to update status", error);
+      alert("Failed to update status");
+    }
+  };
+
+  const handleCreateAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingAlert(true);
+    try {
+      await api.post('alerts', {
+        title: alertTitle,
+        description: alertDescription,
+        category: alertCategory,
+        severity: alertSeverity
+      });
+      setIsAlertModalOpen(false);
+      setAlertTitle("");
+      setAlertDescription("");
+      // Success notification could be added here
+      alert("Alert broadcasted successfully!");
+    } catch (error) {
+      console.error("Failed to create alert", error);
+      alert("Failed to create alert. Please try again.");
+    } finally {
+      setIsSubmittingAlert(false);
+    }
+  };
+
+  const totalGrievances = grievances.length;
+  const pending = grievances.filter(g => (g.status === 'Received' || !g.status)).length;
+  const inProgress = grievances.filter(g => g.status === 'In Progress').length;
+  const resolved = grievances.filter(g => g.status === 'Resolved').length;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout userName={userName}>
       <div className="space-y-6 sm:space-y-8">
         {/* Overview Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -104,40 +122,39 @@ export default function AdminDashboard() {
             {
               icon: FileText,
               label: "Total Grievances",
-              value: "156",
+              value: totalGrievances,
               color: "from-blue-500 to-cyan-500",
-              change: "+12 this week",
+              change: "All time",
             },
             {
               icon: Clock,
               label: "Pending Review",
-              value: "23",
+              value: pending,
               color: "from-amber-500 to-orange-500",
-              change: "Needs attention",
+              change: "Need attention",
             },
             {
               icon: AlertCircle,
               label: "In Progress",
-              value: "48",
+              value: inProgress,
               color: "from-purple-500 to-pink-500",
               change: "Being resolved",
             },
             {
               icon: CheckCircle2,
               label: "Resolved",
-              value: "85",
+              value: resolved,
               color: "from-emerald-500 to-teal-500",
-              change: "54% success rate",
+              change: totalGrievances > 0 ? (resolved / totalGrievances * 100).toFixed(0) + "% success rate" : "No data",
             },
           ].map((stat, index) => (
-            <motion.button
+            <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -4, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="p-4 sm:p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg hover:shadow-xl transition-all text-left cursor-pointer"
+              className="p-4 sm:p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg hover:shadow-xl transition-all text-left"
             >
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className={`size-10 sm:size-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
@@ -150,11 +167,11 @@ export default function AdminDashboard() {
               </div>
               <div className="text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">{stat.label}</div>
               <div className="text-xs text-slate-500">{stat.change}</div>
-            </motion.button>
+            </motion.div>
           ))}
         </div>
 
-        {/* Alert Management */}
+        {/* Alert Management placeholder */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -163,12 +180,8 @@ export default function AdminDashboard() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mb-6">
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">
-                Alert Management
-              </h3>
-              <p className="text-sm text-slate-600">
-                Broadcast important announcements to villagers
-              </p>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">Alert Management</h3>
+              <p className="text-sm text-slate-600">Broadcast important announcements to villagers</p>
             </div>
             <Dialog open={isAlertModalOpen} onOpenChange={setIsAlertModalOpen}>
               <DialogTrigger asChild>
@@ -180,52 +193,68 @@ export default function AdminDashboard() {
               <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-white/60">
                 <DialogHeader>
                   <DialogTitle>Create New Alert</DialogTitle>
-                  <DialogDescription>
-                    Broadcast an important message to all villagers
-                  </DialogDescription>
+                  <DialogDescription>Broadcast an important message to all villagers</DialogDescription>
                 </DialogHeader>
-                <form className="space-y-4 mt-4">
+                <form onSubmit={handleCreateAlert} className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="alert-title">Alert Title</Label>
+                    <Label htmlFor="title">Alert Title</Label>
                     <Input
-                      id="alert-title"
-                      placeholder="Enter alert title"
-                      className="bg-white/80"
+                      id="title"
+                      placeholder="e.g., Water Supply Maintenance"
+                      value={alertTitle}
+                      onChange={(e) => setAlertTitle(e.target.value)}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="alert-message">Message</Label>
+                    <Label htmlFor="description">Message Description</Label>
                     <Textarea
-                      id="alert-message"
-                      placeholder="Enter alert message"
-                      rows={4}
-                      className="bg-white/80 resize-none"
+                      id="description"
+                      placeholder="Provide details about the alert..."
+                      className="min-h-[100px]"
+                      value={alertDescription}
+                      onChange={(e) => setAlertDescription(e.target.value)}
+                      required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="severity">Severity Level</Label>
-                    <Select>
-                      <SelectTrigger className="bg-white/80">
-                        <SelectValue placeholder="Select severity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="info">Info</SelectItem>
-                        <SelectItem value="warning">Warning</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select defaultValue="emergency" onValueChange={setAlertCategory}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="emergency">Emergency</SelectItem>
+                          <SelectItem value="electricity">Electricity</SelectItem>
+                          <SelectItem value="water">Water</SelectItem>
+                          <SelectItem value="health">Health</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Severity</Label>
+                      <Select defaultValue="medium" onValueChange={setAlertSeverity}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsAlertModalOpen(false);
-                    }}
-                  >
-                    <Bell className="size-4 mr-2" />
-                    Publish Alert
-                  </Button>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsAlertModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={isSubmittingAlert}
+                    >
+                      {isSubmittingAlert ? "Broadcasting..." : "Broadcast Alert"}
+                    </Button>
+                  </div>
                 </form>
               </DialogContent>
             </Dialog>
@@ -240,12 +269,8 @@ export default function AdminDashboard() {
           className="p-4 sm:p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
         >
           <div className="mb-6">
-            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">
-              Recent Grievances
-            </h3>
-            <p className="text-sm text-slate-600">
-              Manage and update grievance statuses
-            </p>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">Recent Grievances</h3>
+            <p className="text-sm text-slate-600">Manage and update grievance statuses</p>
           </div>
 
           <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -253,110 +278,72 @@ export default function AdminDashboard() {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
-                      ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
-                      Title
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden md:table-cell">
-                      Category
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden lg:table-cell">
-                      Submitted By
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden sm:table-cell">
-                      Date
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
-                      Action
-                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">ID</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">Title</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden md:table-cell">Category</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden lg:table-cell">Submitted By</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden sm:table-cell">Date</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">Status</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mockGrievances.map((grievance, index) => (
-                    <motion.tr
-                      key={grievance.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.6 + index * 0.05 }}
-                      className="border-b border-slate-100 hover:bg-white/50 transition-colors"
-                    >
-                      <td className="py-4 px-4">
-                        <span className="font-mono text-xs sm:text-sm text-slate-600">
-                          {grievance.id}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <p className="font-medium text-xs sm:text-sm text-slate-800 line-clamp-2">
-                          {grievance.title}
-                        </p>
-                      </td>
-                      <td className="py-4 px-4 hidden md:table-cell">
-                        <span className="text-xs sm:text-sm text-slate-600">
-                          {grievance.category}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 hidden lg:table-cell">
-                        <span className="text-xs sm:text-sm text-slate-600">
-                          {grievance.submittedBy}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 hidden sm:table-cell">
-                        <span className="text-xs sm:text-sm text-slate-600">
-                          {grievance.date}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <Select defaultValue={grievance.status.toLowerCase().replace(" ", "-")}>
-                          <SelectTrigger className="w-24 sm:w-36 h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="received">Received</SelectItem>
-                            <SelectItem value="in-progress">In Progress</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setSelectedGrievance(grievance)}
-                              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
-                            >
-                              <Eye className="size-4" />
-                              <span className="hidden sm:inline ml-1">View</span>
-                            </Button>
-                          </motion.div>
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hidden sm:block">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setSelectedGrievance(grievance)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2"
-                            >
-                              <MessageSquare className="size-4 mr-1" />
-                              Comment
-                            </Button>
-                          </motion.div>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                  {grievances.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500">No grievances found.</td>
+                    </tr>
+                  ) : (
+                    grievances.map((grievance, index) => (
+                      <motion.tr
+                        key={grievance.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 + index * 0.05 }}
+                        className="border-b border-slate-100 hover:bg-white/50 transition-colors"
+                      >
+                        <td className="py-4 px-4"><span className="font-mono text-xs sm:text-sm text-slate-600">GRV-{grievance.id}</span></td>
+                        <td className="py-4 px-4"><p className="font-medium text-xs sm:text-sm text-slate-800 line-clamp-2">{grievance.title}</p></td>
+                        <td className="py-4 px-4 hidden md:table-cell"><span className="text-xs sm:text-sm text-slate-600 capitalize">{grievance.category}</span></td>
+                        <td className="py-4 px-4 hidden lg:table-cell"><span className="text-xs sm:text-sm text-slate-600">{grievance.submitted_by}</span></td>
+                        <td className="py-4 px-4 hidden sm:table-cell"><span className="text-xs sm:text-sm text-slate-600">{new Date(grievance.created_at).toLocaleDateString()}</span></td>
+                        <td className="py-4 px-4">
+                          <Select
+                            defaultValue={(grievance.status || "Received").toLowerCase().replace(" ", "-")}
+                            onValueChange={(val) => handleStatusUpdate(grievance.id, val)}
+                          >
+                            <SelectTrigger className="w-24 sm:w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="received">Received</SelectItem>
+                              <SelectItem value="in-progress">In Progress</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedGrievance(grievance)}
+                                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
+                              >
+                                <Eye className="size-4" />
+                                <span className="hidden sm:inline ml-1">View</span>
+                              </Button>
+                            </motion.div>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </motion.div>
       </div>
-      
+
       <GrievanceDetailsDialog
         grievance={selectedGrievance}
         isOpen={!!selectedGrievance}
