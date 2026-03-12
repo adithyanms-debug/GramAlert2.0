@@ -3,18 +3,55 @@ DROP TABLE IF EXISTS comments CASCADE;
 DROP TABLE IF EXISTS escalations CASCADE;
 DROP TABLE IF EXISTS alerts CASCADE;
 DROP TABLE IF EXISTS grievances CASCADE;
+DROP TABLE IF EXISTS admins CASCADE;
+DROP TABLE IF EXISTS super_admins CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
--- Users table
+-- Users table (Now only for Villagers)
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(15),
-    role VARCHAR(20) NOT NULL,           -- ADMIN or VILLAGER
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Super Admins table (Standalone)
+CREATE TABLE IF NOT EXISTS super_admins (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(15),
+    role VARCHAR(20) NOT NULL DEFAULT 'SUPERADMIN',
+    permissions JSONB DEFAULT '{"all": true}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admins table (Standalone)
+CREATE TABLE IF NOT EXISTS admins (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(15),
+    role VARCHAR(20) NOT NULL DEFAULT 'ADMIN',
+    department VARCHAR(100),
+    division VARCHAR(100),
+    created_by_admin_id BIGINT,          -- The Admin who created this admin
+    created_by_superadmin_id BIGINT,     -- The Super Admin who created this admin
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by_superadmin_id) REFERENCES super_admins(id) ON DELETE SET NULL,
+    CONSTRAINT chk_admin_creator CHECK (
+        (created_by_admin_id IS NOT NULL AND created_by_superadmin_id IS NULL) OR 
+        (created_by_admin_id IS NULL AND created_by_superadmin_id IS NOT NULL) OR
+        (created_by_admin_id IS NULL AND created_by_superadmin_id IS NULL)
+    )
 );
 
 -- Grievances table
@@ -25,7 +62,7 @@ CREATE TABLE IF NOT EXISTS grievances (
     category VARCHAR(50) NOT NULL,       -- electricity, water, roads, sanitation, health, other
     status VARCHAR(20) DEFAULT 'Received', -- Received, In Progress, Resolved
     priority VARCHAR(20) DEFAULT 'Medium', -- High, Medium, Low
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,             -- References users (villagers)
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     file_url VARCHAR(500),
@@ -42,11 +79,17 @@ CREATE TABLE IF NOT EXISTS alerts (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL,       -- electricity, water, health, emergency, other
-    severity VARCHAR(20) DEFAULT 'medium', -- high, medium, low
-    created_by BIGINT NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) DEFAULT 'medium',
+    created_by_admin_id BIGINT,          -- References admins(id)
+    created_by_superadmin_id BIGINT,     -- References super_admins(id)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (created_by_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by_superadmin_id) REFERENCES super_admins(id) ON DELETE CASCADE,
+    CONSTRAINT chk_alert_creator CHECK (
+        (created_by_admin_id IS NOT NULL AND created_by_superadmin_id IS NULL) OR 
+        (created_by_admin_id IS NULL AND created_by_superadmin_id IS NOT NULL)
+    )
 );
 
 -- Escalations table
@@ -63,11 +106,20 @@ CREATE TABLE IF NOT EXISTS escalations (
 CREATE TABLE IF NOT EXISTS comments (
     id BIGSERIAL PRIMARY KEY,
     grievance_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
+    user_id BIGINT,                      -- Refers to users(id) if villager
+    admin_id BIGINT,                     -- Refers to admins(id) if admin
+    super_admin_id BIGINT,               -- Refers to super_admins(id) if super admin
     comment TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (grievance_id) REFERENCES grievances(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+    FOREIGN KEY (super_admin_id) REFERENCES super_admins(id) ON DELETE CASCADE,
+    CONSTRAINT chk_comment_author CHECK (
+        (user_id IS NOT NULL AND admin_id IS NULL AND super_admin_id IS NULL) OR 
+        (user_id IS NULL AND admin_id IS NOT NULL AND super_admin_id IS NULL) OR
+        (user_id IS NULL AND admin_id IS NULL AND super_admin_id IS NOT NULL)
+    )
 );
 
 -- Indexes

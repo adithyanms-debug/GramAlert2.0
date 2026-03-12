@@ -2,16 +2,19 @@ import { query } from '../config/db.js';
 
 export const getComments = async (req, res, next) => {
     try {
-        const { id } = req.params; // grievance_id
-        const result = await query(
-            `SELECT c.id, c.comment, c.created_at, u.username, u.role
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.grievance_id = $1
-       ORDER BY c.created_at ASC`,
-            [id]
-        );
-
+        const { grievanceId } = req.params;
+        const result = await query(`
+            SELECT 
+                c.*,
+                COALESCE(u.username, a.username, sa.username) as username,
+                COALESCE(u.role, a.role, sa.role, 'VILLAGER') as role
+            FROM comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            LEFT JOIN admins a ON c.admin_id = a.id
+            LEFT JOIN super_admins sa ON c.super_admin_id = sa.id
+            WHERE c.grievance_id = $1
+            ORDER BY c.created_at ASC
+        `, [grievanceId]);
         res.json(result.rows);
     } catch (error) {
         next(error);
@@ -20,28 +23,27 @@ export const getComments = async (req, res, next) => {
 
 export const createComment = async (req, res, next) => {
     try {
-        const { id } = req.params; // grievance_id
-        const { comment } = req.body;
-        const userId = req.user.id;
+        const { grievanceId, comment } = req.body;
+        const { id, type } = req.user;
 
-        // Optional: Check if grievance exists and if user has access to it
-        // For now, assuming anyone authenticated can comment, or we can enforce villagers only comment on their own
-        if (req.user.role === 'VILLAGER') {
-            const accessCheck = await query('SELECT id FROM grievances WHERE id = $1 AND user_id = $2', [id, userId]);
-            if (accessCheck.rows.length === 0) {
-                return res.status(403).json({ message: 'Forbidden: You can only comment on your own grievances' });
-            }
+        let user_id = null;
+        let admin_id = null;
+        let super_admin_id = null;
+
+        if (type === 'superadmin') {
+            super_admin_id = id;
+        } else if (type === 'admin') {
+            admin_id = id;
+        } else {
+            user_id = id;
         }
 
         const result = await query(
-            'INSERT INTO comments (grievance_id, user_id, comment) VALUES ($1, $2, $3) RETURNING *',
-            [id, userId, comment]
+            'INSERT INTO comments (grievance_id, user_id, admin_id, super_admin_id, comment) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [grievanceId, user_id, admin_id, super_admin_id, comment]
         );
 
-        res.status(201).json({
-            message: 'Comment added successfully',
-            comment: result.rows[0]
-        });
+        res.status(201).json(result.rows[0]);
     } catch (error) {
         next(error);
     }

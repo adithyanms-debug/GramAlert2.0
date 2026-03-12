@@ -5,38 +5,30 @@ import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { AlertCircle, Clock, CheckCircle2, TrendingUp, FileText, Bell } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { MOCK_USER, MOCK_GRIEVANCES, MOCK_ALERTS } from "../mockData";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 
 export default function VillagerDashboard() {
   const [userName, setUserName] = useState("Loading...");
   const [grievances, setGrievances] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
-
-      if (isDemoMode) {
-        setUserName(MOCK_USER.username);
-        setGrievances(MOCK_GRIEVANCES);
-        setAlerts(MOCK_ALERTS);
-        return;
-      }
-
       try {
-        const userRes = await api.get('/users/me');
+        const userRes = await api.get('users/me');
         if (userRes.data && userRes.data.username) {
           const name = userRes.data.username;
           const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
           setUserName(capitalized);
         }
 
-        const grievRes = await api.get('/grievances');
+        const grievRes = await api.get('grievances');
         if (grievRes.data) {
           setGrievances(grievRes.data);
         }
 
-        const alertsRes = await api.get('/alerts');
+        const alertsRes = await api.get('alerts');
         if (alertsRes.data) {
           setAlerts(alertsRes.data);
         }
@@ -92,8 +84,10 @@ export default function VillagerDashboard() {
             ) : (
               alerts.slice(0, 5).map((alert, index) => {
                 const colors = {
-                  urgent: "from-red-500 to-rose-500",
-                  warning: "from-amber-500 to-orange-500",
+                  critical: "from-red-600 to-rose-700",
+                  high: "from-red-500 to-rose-500",
+                  medium: "from-amber-500 to-orange-500",
+                  low: "from-blue-500 to-cyan-500",
                   info: "from-blue-500 to-cyan-500",
                 };
 
@@ -230,7 +224,10 @@ export default function VillagerDashboard() {
                           <span>{new Date(grievance.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <button className="text-teal-600 hover:text-teal-700 font-medium text-xs sm:text-sm self-start sm:self-center">
+                      <button
+                        className="text-teal-600 hover:text-teal-700 font-medium text-xs sm:text-sm self-start sm:self-center"
+                        onClick={() => setSelectedGrievance(grievance)}
+                      >
                         View Details
                       </button>
                     </div>
@@ -241,6 +238,11 @@ export default function VillagerDashboard() {
           </div>
         </div>
       </div>
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        isOpen={!!selectedGrievance}
+        onClose={() => setSelectedGrievance(null)}
+      />
     </DashboardLayout>
   );
 }

@@ -1,36 +1,307 @@
-import { Link } from "react-router";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Shield, FileText, ArrowLeft } from "lucide-react";
+import { DashboardLayout } from "../components/DashboardLayout";
+import api from "../api";
+import {
+  Eye,
+  MessageSquare,
+  Filter,
+  Download,
+  Search,
+} from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+import { toast } from "sonner";
 
 export default function AdminGrievances() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50 p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto"
-      >
-        <Link
-          to="/admin"
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-teal-600 transition-colors mb-8"
-        >
-          <ArrowLeft className="size-5" />
-          Back to Dashboard
-        </Link>
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [grievances, setGrievances] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-        <div className="p-8 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="size-16 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 flex items-center justify-center">
-              <FileText className="size-8 text-white" />
+  const fetchGrievances = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("grievances");
+      setGrievances(res.data);
+    } catch (error) {
+      console.error("Failed to fetch grievances", error);
+      toast.error("Could not load grievances");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGrievances();
+  }, []);
+
+  const handleViewDetails = (grievance: any) => {
+    setSelectedGrievance(grievance);
+    setDialogOpen(true);
+  };
+
+  const handleStatusChange = async (id: number | string, newStatus: string) => {
+    try {
+      await api.patch(`grievances/${id}/status`, { status: newStatus });
+      toast.success(`Grievance status updated to ${newStatus}`);
+      fetchGrievances(); // Refresh list
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleAddComment = async (id: number | string, comment: string) => {
+    try {
+      await api.post(`grievances/${id}/comments`, { comment });
+      toast.success("Comment added successfully");
+      // Fetch the updated grievance to show new comments in dialog
+      const res = await api.get(`grievances/${id}`);
+      setSelectedGrievance(res.data);
+      fetchGrievances(); // Refresh list
+    } catch (error) {
+      console.error("Failed to add comment", error);
+      toast.error("Failed to add comment");
+    }
+  };
+
+  const filteredGrievances = grievances.filter(g => {
+    const matchesSearch =
+      g.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.id?.toString().includes(searchQuery);
+
+    const matchesStatus = filterStatus === "all" || g.status?.toLowerCase() === filterStatus.toLowerCase();
+    const matchesCategory = filterCategory === "all" || g.category?.toLowerCase() === filterCategory.toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="size-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 sm:p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+              <Input
+                placeholder="Search grievances..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-white/80"
+              />
             </div>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="bg-white/80">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Received">Received</SelectItem>
+                <SelectItem value="In Progress">In Progress</SelectItem>
+                <SelectItem value="Resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="bg-white/80">
+                <SelectValue placeholder="Filter by Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                <SelectItem value="drainage">Drainage</SelectItem>
+                <SelectItem value="sanitation">Sanitation</SelectItem>
+                <SelectItem value="water supply">Water Supply</SelectItem>
+                <SelectItem value="road maintenance">Road Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button variant="outline" className="bg-white/80">
+              <Download className="size-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Grievances Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="p-4 sm:p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
+        >
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">All Grievances</h1>
-              <p className="text-slate-600">View and manage all submitted grievances</p>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">
+                All Grievances
+              </h3>
+              <p className="text-sm text-slate-600">
+                Showing {filteredGrievances.length} grievances
+              </p>
             </div>
           </div>
-          <p className="text-slate-600">This page is under construction. Full grievance management coming soon!</p>
-        </div>
-      </motion.div>
-    </div>
+
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
+                      ID
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
+                      Title
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden lg:table-cell">
+                      Category
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden xl:table-cell">
+                      Priority
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden md:table-cell">
+                      Submitted By
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden sm:table-cell">
+                      Date
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredGrievances.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-slate-500">
+                        No grievances found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredGrievances.map((grievance, index) => (
+                      <motion.tr
+                        key={grievance.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + index * 0.03 }}
+                        className="border-b border-slate-100 hover:bg-white/50 transition-colors"
+                      >
+                        <td className="py-4 px-4">
+                          <span className="font-mono text-xs sm:text-sm text-slate-600">
+                            GRV-{grievance.id}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <p className="font-medium text-xs sm:text-sm text-slate-800 line-clamp-2">
+                            {grievance.title}
+                          </p>
+                        </td>
+                        <td className="py-4 px-4 hidden lg:table-cell">
+                          <span className="text-xs sm:text-sm text-slate-600 capitalize">
+                            {grievance.category}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 hidden xl:table-cell">
+                          <span className={`text-xs sm:text-sm font-medium capitalize ${grievance.priority === 'high' ? 'text-red-600' :
+                            grievance.priority === 'medium' ? 'text-amber-600' :
+                              'text-emerald-600'
+                            }`}>
+                            {grievance.priority}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 hidden md:table-cell">
+                          <span className="text-xs sm:text-sm text-slate-600">
+                            {grievance.submitted_by}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 hidden sm:table-cell">
+                          <span className="text-xs sm:text-sm text-slate-600">
+                            {new Date(grievance.created_at).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${grievance.status === "Received"
+                            ? "bg-amber-100 text-amber-700"
+                            : grievance.status === "In Progress"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-emerald-100 text-emerald-700"
+                            }`}>
+                            {grievance.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2"
+                                onClick={() => handleViewDetails(grievance)}
+                              >
+                                <Eye className="size-4" />
+                              </Button>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="hidden sm:block">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
+                                onClick={() => handleViewDetails(grievance)}
+                              >
+                                <MessageSquare className="size-4" />
+                              </Button>
+                            </motion.div>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        isAdmin={true}
+        onStatusChange={handleStatusChange}
+        onAddComment={handleAddComment}
+      />
+    </DashboardLayout>
   );
 }

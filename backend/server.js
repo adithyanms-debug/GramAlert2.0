@@ -12,6 +12,7 @@ import grievanceRoutes from './src/routes/grievance.routes.js';
 import alertRoutes from './src/routes/alert.routes.js';
 import commentRoutes from './src/routes/comment.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+import superAdminRoutes from './src/routes/superadmin.routes.js';
 
 // Import Middleware & Services
 import { errorHandler } from './src/middleware/errorHandler.js';
@@ -43,6 +44,7 @@ app.use('/api/grievances', grievanceRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/grievances/:id/comments', commentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/superadmin', superAdminRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {

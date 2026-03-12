@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { getProfile, updateProfile } from '../controllers/user.controller.js';
+import { getProfile, updateProfile, getVillagers } from '../controllers/user.controller.js';
 import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -20,6 +20,7 @@ const validate = (validations) => {
 };
 
 router.get('/me', auth, getProfile);
+router.get('/villagers', auth, getVillagers);
 
 router.patch('/me', auth, validate([
     body('email').optional().isEmail().withMessage('Valid email is required'),

@@ -12,35 +12,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { MOCK_USER, MOCK_GRIEVANCES } from "../mockData";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 
 export default function MyGrievances() {
   const [grievances, setGrievances] = useState<any[]>([]);
   const [userName, setUserName] = useState("Loading...");
+  const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
-      if (isDemoMode) {
-        setUserName(MOCK_USER.username);
-        setGrievances(MOCK_GRIEVANCES);
-        return;
-      }
-
       try {
-        const userRes = await api.get('/users/me');
+        const userRes = await api.get('users/me');
         if (userRes.data && userRes.data.username) {
           const name = userRes.data.username;
           const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
           setUserName(capitalized);
         }
 
-        const grievRes = await api.get('/grievances');
+        const grievRes = await api.get('grievances');
         if (grievRes.data) {
           setGrievances(grievRes.data);
         }
       } catch (error) {
         console.error("Failed to fetch grievances", error);
+        if (userName === "Loading...") setUserName("Villager");
       }
     };
     fetchData();
@@ -52,12 +48,16 @@ export default function MyGrievances() {
     Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
   };
 
+  const handleViewDetails = (grievance: any) => {
+    setSelectedGrievance(grievance);
+    setDialogOpen(true);
+  };
+
   return (
     <DashboardLayout userName={userName}>
       <div className="space-y-6">
         {/* Filters */}
         <motion.div
-          // ... (Filters code same as source)
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
@@ -133,7 +133,10 @@ export default function MyGrievances() {
                         <span className="capitalize">Priority: {grievance.priority}</span>
                       </div>
                     </div>
-                    <Button className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700">
+                    <Button
+                      onClick={() => handleViewDetails(grievance)}
+                      className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
+                    >
                       View Details
                     </Button>
                   </div>
@@ -171,6 +174,12 @@ export default function MyGrievances() {
           )}
         </div>
       </div>
+
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+      />
     </DashboardLayout>
   );
 }

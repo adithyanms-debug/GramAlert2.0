@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import {
@@ -18,9 +18,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useLocation } from "react-router";
-import { useEffect } from "react";
 import api from "../api";
-import { MOCK_USER } from "../mockData";
+import { toast } from "sonner";
 
 export default function Profile() {
   const location = useLocation();
@@ -32,6 +31,7 @@ export default function Profile() {
   // Real user data state
   const [userData, setUserData] = useState({
     name: isAdmin ? "Administrator" : "Loading...",
+    username: "",
     email: "",
     phone: "",
     address: "",
@@ -47,56 +47,47 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
-      if (isDemoMode) {
-        setUserData({
-          ...MOCK_USER,
-          name: MOCK_USER.username,
-          joinedDate: new Date(MOCK_USER.joinedDate).toLocaleDateString(),
-          userId: MOCK_USER.id.toString(),
-          address: "123, Green Valley, Bangalore East"
-        });
-        setIsLoadingItems(false);
-        return;
-      }
-
       try {
-        const response = await api.get('/users/me');
+        const response = await api.get('users/me');
         if (response.data) {
           setUserData({
             ...response.data,
-            name: response.data.username,
-            joinedDate: new Date(response.data.joinedDate).toLocaleDateString(),
-            userId: response.data.id
+            name: response.data.username || "User",
+            joinedDate: new Date(response.data.joinedDate || response.data.created_at).toLocaleDateString(),
+            userId: response.data.id,
+            address: response.data.address || "N/A"
           });
         }
       } catch (error) {
         console.error("Failed to fetch profile", error);
+        if (userData.name === "Loading...") {
+          setUserData(prev => ({ ...prev, name: "User" }));
+        }
       } finally {
         setIsLoadingItems(false);
       }
     };
 
-    // In a real app, you might not fetch if there's no token or if it's purely mock for admin
     fetchProfile();
   }, []);
 
   const handleSave = async () => {
     try {
-      await api.patch('/users/me', {
+      await api.patch('users/me', {
         phone: userData.phone,
         email: userData.email
       });
       setIsEditing(false);
+      toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Failed to update profile", error);
-      alert("Failed to update profile. Please try again.");
+      toast.error("Failed to update profile");
     }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Password change not implemented in current backend specification.");
+    toast.error("Password change not implemented in current backend specification.");
     setShowPasswordChange(false);
   };
 
@@ -161,22 +152,6 @@ export default function Profile() {
                     {userData.joinedDate}
                   </span>
                 </div>
-                {!isAdmin && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Grievances</span>
-                      <span className="text-sm font-semibold text-teal-600">
-                        12 Total
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Resolved</span>
-                      <span className="text-sm font-semibold text-emerald-600">
-                        8 Completed
-                      </span>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 
@@ -415,68 +390,6 @@ export default function Profile() {
                 </form>
               </motion.div>
             )}
-
-            {/* Account Activity */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="size-10 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                  <Calendar className="size-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Recent Activity
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {isAdmin ? (
-                  <>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Created new alert
-                      </span>
-                      <span className="text-xs text-slate-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Resolved 3 grievances
-                      </span>
-                      <span className="text-xs text-slate-500">1 day ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Updated profile information
-                      </span>
-                      <span className="text-xs text-slate-500">3 days ago</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Submitted new grievance
-                      </span>
-                      <span className="text-xs text-slate-500">1 day ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Viewed community alerts
-                      </span>
-                      <span className="text-xs text-slate-500">2 days ago</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-                      <span className="text-sm text-slate-600">
-                        Updated profile information
-                      </span>
-                      <span className="text-xs text-slate-500">1 week ago</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
           </div>
         </div>
       </motion.div>

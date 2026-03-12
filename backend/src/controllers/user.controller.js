@@ -2,11 +2,17 @@ import { query } from '../config/db.js';
 
 export const getProfile = async (req, res, next) => {
     try {
-        const userId = req.user.id;
-        const result = await query(
-            'SELECT id, username, email, phone, role, created_at as joinedDate FROM users WHERE id = $1',
-            [userId]
-        );
+        const { id, type } = req.user;
+        let result;
+
+        if (type === 'superadmin') {
+            result = await query('SELECT id, username, email, phone, role, created_at FROM super_admins WHERE id = $1', [id]);
+        } else if (type === 'admin') {
+            result = await query('SELECT id, username, email, phone, role, department, division, created_at FROM admins WHERE id = $1', [id]);
+        } else {
+            result = await query('SELECT id, username, email, phone, created_at FROM users WHERE id = $1', [id]);
+            if (result.rows.length > 0) result.rows[0].role = 'VILLAGER';
+        }
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'User not found' });
@@ -20,44 +26,41 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
     try {
-        const userId = req.user.id;
-        const { phone, email } = req.body;
+        const { id, type } = req.user;
+        const { username, email, phone } = req.body;
 
-        // Check if new email belongs to someone else
-        if (email) {
-            const emailCheck = await query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
-            if (emailCheck.rows.length > 0) {
-                return res.status(400).json({ message: 'Email already in use' });
-            }
+        let result;
+        if (type === 'superadmin') {
+            result = await query(
+                'UPDATE super_admins SET username = $1, email = $2, phone = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, email, phone',
+                [username, email, phone, id]
+            );
+        } else if (type === 'admin') {
+            result = await query(
+                'UPDATE admins SET username = $1, email = $2, phone = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, email, phone',
+                [username, email, phone, id]
+            );
+        } else {
+            result = await query(
+                'UPDATE users SET username = $1, email = $2, phone = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, email, phone',
+                [username, email, phone, id]
+            );
         }
 
-        const updates = [];
-        const values = [];
-        let queryIndex = 1;
-
-        if (phone !== undefined) {
-            updates.push(`phone = $${queryIndex++}`);
-            values.push(phone);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        if (email !== undefined) {
-            updates.push(`email = $${queryIndex++}`);
-            values.push(email);
-        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        next(error);
+    }
+};
 
-        if (updates.length === 0) {
-            return res.status(400).json({ message: 'No fields to update' });
-        }
-
-        values.push(userId); // the last var is the ID
-        const queryString = `UPDATE users SET ${updates.join(', ')} WHERE id = $${queryIndex} RETURNING id, username, email, phone, role`;
-
-        const result = await query(queryString, values);
-
-        res.json({
-            message: 'Profile updated successfully',
-            user: result.rows[0]
-        });
+export const getVillagers = async (req, res, next) => {
+    try {
+        const result = await query('SELECT id, username, email, phone, created_at FROM users ORDER BY created_at DESC');
+        res.json(result.rows);
     } catch (error) {
         next(error);
     }

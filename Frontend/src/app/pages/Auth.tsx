@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import api from "../api";
+
 const features = [
   "Secure & Private",
   "Role-Based Access",
@@ -30,10 +31,14 @@ export default function Auth() {
     try {
       let response;
       if (isLogin) {
-        response = await api.post("/auth/login", { username: email, password });
+        response = await api.post("auth/login", {
+          username: email,
+          password,
+          type: 'villager'
+        });
       } else {
         // Backend register expects: username, email, password, phone
-        response = await api.post("/auth/register", {
+        response = await api.post("auth/register", {
           username: name.replace(/\s+/g, '').toLowerCase() || email.split('@')[0],
           email,
           password,
@@ -44,11 +49,17 @@ export default function Auth() {
       // Store token
       if (response.data && response.data.token) {
         localStorage.setItem("token", response.data.token);
-        localStorage.removeItem("isDemoMode");
       }
 
       // Redirect on success
-      navigate("/villager");
+      const userRole = response.data.user.role;
+      if (userRole === "SUPERADMIN") {
+        navigate("/superadmin");
+      } else if (userRole === "ADMIN") {
+        navigate("/admin");
+      } else {
+        navigate("/villager");
+      }
     } catch (error: any) {
       console.error("Authentication error:", error);
       setErrorMsg(error.response?.data?.message || "Authentication failed. Please try again.");
@@ -57,21 +68,6 @@ export default function Auth() {
     }
   };
 
-  const handleAdminDemo = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      navigate("/admin");
-    }, 800);
-  };
-
-  const handleVillagerDemo = () => {
-    setIsLoading(true);
-    localStorage.setItem("isDemoMode", "true");
-    localStorage.setItem("token", "demo-token");
-    setTimeout(() => {
-      navigate("/villager");
-    }, 800);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50 flex items-center justify-center p-6 relative overflow-hidden">
@@ -367,42 +363,6 @@ export default function Auth() {
               </motion.div>
             </form>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="mt-8 p-4 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-100"
-            >
-              <p className="text-sm text-slate-600 leading-relaxed mb-3">
-                <strong className="text-teal-700">Demo Access:</strong> Try the platform instantly
-              </p>
-              <div className="flex gap-2">
-                <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleVillagerDemo}
-                    disabled={isLoading}
-                    className="w-full border-teal-300 hover:bg-teal-50"
-                  >
-                    Demo as Villager
-                  </Button>
-                </motion.div>
-                <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAdminDemo}
-                    disabled={isLoading}
-                    className="w-full border-emerald-300 hover:bg-emerald-50"
-                  >
-                    Demo as Admin
-                  </Button>
-                </motion.div>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
       </motion.div>

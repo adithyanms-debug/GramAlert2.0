@@ -67,11 +67,18 @@ export const getGrievanceById = async (req, res, next) => {
 
         // Fetch comments
         const commentsResult = await query(
-            `SELECT c.id, c.comment, c.created_at, u.username, u.role
-       FROM comments c
-       JOIN users u ON c.user_id = u.id
-       WHERE c.grievance_id = $1
-       ORDER BY c.created_at ASC`,
+            `SELECT 
+                c.id, 
+                c.comment, 
+                c.created_at, 
+                COALESCE(comments_u.username, comments_a.username, sa.username) as username,
+                COALESCE(comments_u.role, comments_a.role, sa.role, 'VILLAGER') as role
+            FROM comments c
+            LEFT JOIN users comments_u ON c.user_id = comments_u.id
+            LEFT JOIN admins comments_a ON c.admin_id = comments_a.id
+            LEFT JOIN super_admins sa ON c.super_admin_id = sa.id
+            WHERE c.grievance_id = $1
+            ORDER BY c.created_at ASC`,
             [id]
         );
 

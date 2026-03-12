@@ -3,7 +3,6 @@ import api from "../api";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Bell, AlertCircle, Info, AlertTriangle } from "lucide-react";
-import { MOCK_USER, MOCK_ALERTS } from "../mockData";
 
 export default function Alerts() {
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -11,27 +10,21 @@ export default function Alerts() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const isDemoMode = localStorage.getItem("isDemoMode") === "true";
-      if (isDemoMode) {
-        setUserName(MOCK_USER.username);
-        setAlerts(MOCK_ALERTS);
-        return;
-      }
-
       try {
-        const userRes = await api.get('/users/me');
+        const userRes = await api.get('users/me');
         if (userRes.data && userRes.data.username) {
           const name = userRes.data.username;
           const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
           setUserName(capitalized);
         }
 
-        const alertsRes = await api.get('/alerts');
+        const alertsRes = await api.get('alerts');
         if (alertsRes.data) {
           setAlerts(alertsRes.data);
         }
       } catch (error) {
         console.error("Failed to fetch alerts", error);
+        if (userName === "Loading...") setUserName("Villager");
       }
     };
     fetchData();
@@ -39,6 +32,13 @@ export default function Alerts() {
 
   const getAlertConfig = (severity: string) => {
     const configs = {
+      high: {
+        icon: AlertCircle,
+        bgColor: "from-red-500 to-rose-500",
+        borderColor: "border-red-200",
+        textColor: "text-red-700",
+        bgLight: "bg-red-50",
+      },
       urgent: {
         icon: AlertCircle,
         bgColor: "from-red-500 to-rose-500",
@@ -46,12 +46,26 @@ export default function Alerts() {
         textColor: "text-red-700",
         bgLight: "bg-red-50",
       },
+      medium: {
+        icon: AlertTriangle,
+        bgColor: "from-amber-500 to-orange-500",
+        borderColor: "border-amber-200",
+        textColor: "text-amber-700",
+        bgLight: "bg-amber-50",
+      },
       warning: {
         icon: AlertTriangle,
         bgColor: "from-amber-500 to-orange-500",
         borderColor: "border-amber-200",
         textColor: "text-amber-700",
         bgLight: "bg-amber-50",
+      },
+      low: {
+        icon: Info,
+        bgColor: "from-blue-500 to-cyan-500",
+        borderColor: "border-blue-200",
+        textColor: "text-blue-700",
+        bgLight: "bg-blue-50",
       },
       info: {
         icon: Info,

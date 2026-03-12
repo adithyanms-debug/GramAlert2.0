@@ -12,5 +12,6 @@ export const requireRole = (roleArray) => {
     };
 };
 
-export const isAdmin = requireRole(['ADMIN']);
-export const isVillager = requireRole(['VILLAGER', 'ADMIN']); // Admins can also act as villagers usually, or just ['VILLAGER']
+export const isAdmin = requireRole(['ADMIN', 'SUPERADMIN']);
+export const isSuperAdmin = requireRole(['SUPERADMIN']);
+export const isVillager = requireRole(['VILLAGER', 'ADMIN', 'SUPERADMIN']); 

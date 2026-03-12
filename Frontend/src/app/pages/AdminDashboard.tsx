@@ -32,22 +32,31 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 
 export default function AdminDashboard() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [userName, setUserName] = useState("Loading...");
   const [grievances, setGrievances] = useState<any[]>([]);
+  const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
+
+  // Alert form state
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertDescription, setAlertDescription] = useState("");
+  const [alertCategory, setAlertCategory] = useState("emergency");
+  const [alertSeverity, setAlertSeverity] = useState("medium");
+  const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
 
   const fetchData = async () => {
     try {
-      const userRes = await api.get('/users/me');
+      const userRes = await api.get('users/me');
       if (userRes.data && userRes.data.username) {
         const name = userRes.data.username;
         const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
         setUserName(capitalized);
       }
 
-      const grievRes = await api.get('/grievances');
+      const grievRes = await api.get('grievances');
       if (grievRes.data) {
         setGrievances(grievRes.data);
       }
@@ -63,13 +72,12 @@ export default function AdminDashboard() {
 
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     try {
-      // Map UI values back to DB values if needed (Received, In Progress, Resolved)
       const statusMap: Record<string, string> = {
         'received': 'Received',
         'in-progress': 'In Progress',
         'resolved': 'Resolved'
       };
-      await api.patch(`/grievances/${id}/status`, { status: statusMap[newStatus] || newStatus });
+      await api.patch(`grievances/${id}/status`, { status: statusMap[newStatus] || newStatus });
       fetchData(); // Refresh list
     } catch (error) {
       console.error("Failed to update status", error);
@@ -77,8 +85,31 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleCreateAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingAlert(true);
+    try {
+      await api.post('alerts', {
+        title: alertTitle,
+        description: alertDescription,
+        category: alertCategory,
+        severity: alertSeverity
+      });
+      setIsAlertModalOpen(false);
+      setAlertTitle("");
+      setAlertDescription("");
+      // Success notification could be added here
+      alert("Alert broadcasted successfully!");
+    } catch (error) {
+      console.error("Failed to create alert", error);
+      alert("Failed to create alert. Please try again.");
+    } finally {
+      setIsSubmittingAlert(false);
+    }
+  };
+
   const totalGrievances = grievances.length;
-  const pending = grievances.filter(g => g.status === 'Received').length;
+  const pending = grievances.filter(g => (g.status === 'Received' || !g.status)).length;
   const inProgress = grievances.filter(g => g.status === 'In Progress').length;
   const resolved = grievances.filter(g => g.status === 'Resolved').length;
 
@@ -164,10 +195,67 @@ export default function AdminDashboard() {
                   <DialogTitle>Create New Alert</DialogTitle>
                   <DialogDescription>Broadcast an important message to all villagers</DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                  <p className="text-sm text-slate-500">Alert generation is currently managed via the database or future Alert Management page.</p>
-                </div>
-                <Button onClick={() => setIsAlertModalOpen(false)}>Close</Button>
+                <form onSubmit={handleCreateAlert} className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Alert Title</Label>
+                    <Input
+                      id="title"
+                      placeholder="e.g., Water Supply Maintenance"
+                      value={alertTitle}
+                      onChange={(e) => setAlertTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Message Description</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Provide details about the alert..."
+                      className="min-h-[100px]"
+                      value={alertDescription}
+                      onChange={(e) => setAlertDescription(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select defaultValue="emergency" onValueChange={setAlertCategory}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="emergency">Emergency</SelectItem>
+                          <SelectItem value="electricity">Electricity</SelectItem>
+                          <SelectItem value="water">Water</SelectItem>
+                          <SelectItem value="health">Health</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Severity</Label>
+                      <Select defaultValue="medium" onValueChange={setAlertSeverity}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsAlertModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={isSubmittingAlert}
+                    >
+                      {isSubmittingAlert ? "Broadcasting..." : "Broadcast Alert"}
+                    </Button>
+                  </div>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
@@ -196,12 +284,13 @@ export default function AdminDashboard() {
                     <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden lg:table-cell">Submitted By</th>
                     <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden sm:table-cell">Date</th>
                     <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">Status</th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {grievances.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-500">No grievances found.</td>
+                      <td colSpan={7} className="py-8 text-center text-slate-500">No grievances found.</td>
                     </tr>
                   ) : (
                     grievances.map((grievance, index) => (
@@ -219,7 +308,7 @@ export default function AdminDashboard() {
                         <td className="py-4 px-4 hidden sm:table-cell"><span className="text-xs sm:text-sm text-slate-600">{new Date(grievance.created_at).toLocaleDateString()}</span></td>
                         <td className="py-4 px-4">
                           <Select
-                            defaultValue={grievance.status.toLowerCase().replace(" ", "-")}
+                            defaultValue={(grievance.status || "Received").toLowerCase().replace(" ", "-")}
                             onValueChange={(val) => handleStatusUpdate(grievance.id, val)}
                           >
                             <SelectTrigger className="w-24 sm:w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -230,6 +319,21 @@ export default function AdminDashboard() {
                             </SelectContent>
                           </Select>
                         </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedGrievance(grievance)}
+                                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
+                              >
+                                <Eye className="size-4" />
+                                <span className="hidden sm:inline ml-1">View</span>
+                              </Button>
+                            </motion.div>
+                          </div>
+                        </td>
                       </motion.tr>
                     ))
                   )}
@@ -239,6 +343,12 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
       </div>
+
+      <GrievanceDetailsDialog
+        grievance={selectedGrievance}
+        isOpen={!!selectedGrievance}
+        onClose={() => setSelectedGrievance(null)}
+      />
     </DashboardLayout>
   );
 }
