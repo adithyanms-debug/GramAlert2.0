@@ -6,8 +6,11 @@ export const register = async (req, res, next) => {
     try {
         const { username, password, email, phone } = req.body;
 
+        const normalizedEmail = email.toLowerCase();
+        const normalizedUsername = username; // Username can stay as is, but we'll check it case-insensitively
+
         // Check if user exists in users table (Villagers)
-        const userExist = await query('SELECT id FROM users WHERE username = $1 OR email = $2', [username, email]);
+        const userExist = await query('SELECT id FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($2)', [normalizedUsername, normalizedEmail]);
         if (userExist.rows.length > 0) {
             return res.status(400).json({ message: 'Username or email already exists' });
         }
@@ -19,7 +22,7 @@ export const register = async (req, res, next) => {
         // Insert user (Always VILLAGER for self-registration)
         const result = await query(
             'INSERT INTO users (username, password, email, phone) VALUES ($1, $2, $3, $4) RETURNING id, username, email',
-            [username, hashedPassword, email, phone]
+            [normalizedUsername, hashedPassword, normalizedEmail, phone]
         );
 
         const user = result.rows[0];
@@ -46,11 +49,11 @@ export const login = async (req, res, next) => {
         let role;
 
         if (type === 'superadmin') {
-            result = await query('SELECT * FROM super_admins WHERE username = $1 OR email = $1', [username]);
+            result = await query('SELECT * FROM super_admins WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)', [username]);
         } else if (type === 'admin') {
-            result = await query('SELECT * FROM admins WHERE username = $1 OR email = $1', [username]);
+            result = await query('SELECT * FROM admins WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)', [username]);
         } else {
-            result = await query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
+            result = await query('SELECT * FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)', [username]);
             role = 'VILLAGER';
         }
 

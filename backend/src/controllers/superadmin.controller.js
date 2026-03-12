@@ -49,8 +49,10 @@ export const createAdmin = async (req, res, next) => {
         const { username, email, password, phone, department, division } = req.body;
         const superAdminId = req.user.id;
 
+        const normalizedEmail = email.toLowerCase();
+
         // Check if admin exists
-        const adminExist = await query('SELECT id FROM admins WHERE username = $1 OR email = $2', [username, email]);
+        const adminExist = await query('SELECT id FROM admins WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($2)', [username, normalizedEmail]);
         if (adminExist.rows.length > 0) {
             return res.status(400).json({ message: 'Administrator already exists' });
         }
@@ -62,7 +64,7 @@ export const createAdmin = async (req, res, next) => {
         // Insert admin with creator link to super_admins
         const result = await query(
             'INSERT INTO admins (username, email, password, phone, role, department, division, created_by_superadmin_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, email',
-            [username, email, hashedPassword, phone, 'ADMIN', department, division, superAdminId]
+            [username, normalizedEmail, hashedPassword, phone, 'ADMIN', department, division, superAdminId]
         );
 
         res.status(201).json(result.rows[0]);
