@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+import { toast } from "sonner";
 
 export default function MyGrievances() {
   const [grievances, setGrievances] = useState<any[]>([]);
@@ -48,9 +49,26 @@ export default function MyGrievances() {
     Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
   };
 
-  const handleViewDetails = (grievance: any) => {
-    setSelectedGrievance(grievance);
-    setDialogOpen(true);
+  const handleViewDetails = async (grievance: any) => {
+    try {
+      const res = await api.get(`grievances/${grievance.id}`);
+      setSelectedGrievance(res.data);
+      setDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch grievance details", error);
+    }
+  };
+
+  const handleAddComment = async (id: number | string, comment: string) => {
+    try {
+      await api.post(`grievances/${id}/comments`, { comment });
+      toast.success("Comment added successfully");
+      const res = await api.get(`grievances/${id}`);
+      setSelectedGrievance(res.data);
+    } catch (error) {
+      console.error("Failed to add comment", error);
+      toast.error("Failed to add comment");
+    }
   };
 
   return (
@@ -179,6 +197,7 @@ export default function MyGrievances() {
         grievance={selectedGrievance}
         isOpen={dialogOpen}
         onClose={() => setDialogOpen(false)}
+        onAddComment={handleAddComment}
       />
     </DashboardLayout>
   );

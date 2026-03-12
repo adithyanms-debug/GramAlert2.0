@@ -72,7 +72,7 @@ export const getGrievanceById = async (req, res, next) => {
                 c.comment, 
                 c.created_at, 
                 COALESCE(comments_u.username, comments_a.username, sa.username) as username,
-                COALESCE(comments_u.role, comments_a.role, sa.role, 'VILLAGER') as role
+                COALESCE(comments_a.role, sa.role, 'VILLAGER') as role
             FROM comments c
             LEFT JOIN users comments_u ON c.user_id = comments_u.id
             LEFT JOIN admins comments_a ON c.admin_id = comments_a.id

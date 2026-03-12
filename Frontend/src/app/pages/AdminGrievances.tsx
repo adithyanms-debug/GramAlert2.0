@@ -47,9 +47,15 @@ export default function AdminGrievances() {
     fetchGrievances();
   }, []);
 
-  const handleViewDetails = (grievance: any) => {
-    setSelectedGrievance(grievance);
-    setDialogOpen(true);
+  const handleViewDetails = async (grievance: any) => {
+    try {
+      const res = await api.get(`grievances/${grievance.id}`);
+      setSelectedGrievance(res.data);
+      setDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch grievance details", error);
+      toast.error("Could not load grievance details");
+    }
   };
 
   const handleStatusChange = async (id: number | string, newStatus: string) => {

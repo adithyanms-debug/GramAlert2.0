@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, MapPin, Calendar, Tag, User, MessageSquare, Clock, CheckCircle2, Send } from "lucide-react";
+import { X, MapPin, Calendar, Tag, User, MessageSquare, Clock, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 
@@ -42,11 +42,11 @@ interface GrievanceDetailsDialogProps {
   onAddComment?: (id: string, comment: string) => void;
 }
 
-export function GrievanceDetailsDialog({ 
-  grievance, 
-  isOpen, 
+export function GrievanceDetailsDialog({
+  grievance,
+  isOpen,
   open,
-  onClose, 
+  onClose,
   onOpenChange,
   isAdmin = false,
   onStatusChange,
@@ -64,21 +64,19 @@ export function GrievanceDetailsDialog({
   // Update comments when grievance changes
   useEffect(() => {
     if (grievance) {
-      const initialComments = grievance.comments || grievance.updates?.map((update, index) => ({
+      const initialComments = grievance.comments?.map((c: any) => ({
+        id: c.id,
+        user: c.username,
+        role: c.role,
+        message: c.comment,
+        timestamp: new Date(c.created_at).toLocaleString()
+      })) || grievance.updates?.map((update, index) => ({
         id: index + 1,
         user: update.author,
         role: update.author === "System" ? "System" : "Administrator",
         message: update.message,
         timestamp: update.date
-      })) || [
-        {
-          id: 1,
-          user: "Admin Kumar",
-          role: "Administrator",
-          message: "We have received your grievance and assigned it to the concerned department.",
-          timestamp: "2 hours ago"
-        }
-      ];
+      })) || [];
       setComments(initialComments);
     }
   }, [grievance]);
@@ -86,7 +84,7 @@ export function GrievanceDetailsDialog({
   if (!grievance) return null;
 
   const dialogIsOpen = isOpen ?? open ?? false;
-  
+
   const handleClose = () => {
     if (onClose) onClose();
     if (onOpenChange) onOpenChange(false);
@@ -106,17 +104,9 @@ export function GrievanceDetailsDialog({
   };
 
   const handleAddComment = () => {
-    if (newComment.trim()) {
-      const comment = {
-        id: comments.length + 1,
-        user: "Rajesh Kumar",
-        role: "Villager",
-        message: newComment,
-        timestamp: "Just now"
-      };
-      setComments([...comments, comment]);
+    if (newComment.trim() && onAddComment) {
+      onAddComment(grievance.id, newComment);
       setNewComment("");
-      if (onAddComment) onAddComment(grievance.id, newComment);
     }
   };
 
@@ -147,14 +137,12 @@ export function GrievanceDetailsDialog({
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm font-mono text-slate-500">{grievance.id}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                      statusColors[grievance.status as keyof typeof statusColors]
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[grievance.status as keyof typeof statusColors]
+                      }`}>
                       {grievance.status}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                      priorityColors[grievance.priority as keyof typeof priorityColors]
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${priorityColors[grievance.priority as keyof typeof priorityColors]
+                      }`}>
                       {grievance.priority} Priority
                     </span>
                   </div>
@@ -221,8 +209,8 @@ export function GrievanceDetailsDialog({
                       <span className="font-medium">Location</span>
                     </div>
                     <p className="text-slate-800 font-semibold text-sm">
-                      {typeof grievance.location === 'object' 
-                        ? `${grievance.location.lat.toFixed(4)}, ${grievance.location.lng.toFixed(4)}` 
+                      {typeof grievance.location === 'object'
+                        ? `${grievance.location.lat.toFixed(4)}, ${grievance.location.lng.toFixed(4)}`
                         : grievance.location}
                     </p>
                   </div>

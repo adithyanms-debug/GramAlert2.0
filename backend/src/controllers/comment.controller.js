@@ -2,12 +2,12 @@ import { query } from '../config/db.js';
 
 export const getComments = async (req, res, next) => {
     try {
-        const { grievanceId } = req.params;
+        const { id: grievanceId } = req.params;
         const result = await query(`
             SELECT 
                 c.*,
                 COALESCE(u.username, a.username, sa.username) as username,
-                COALESCE(u.role, a.role, sa.role, 'VILLAGER') as role
+                COALESCE(a.role, sa.role, 'VILLAGER') as role
             FROM comments c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN admins a ON c.admin_id = a.id
@@ -23,7 +23,8 @@ export const getComments = async (req, res, next) => {
 
 export const createComment = async (req, res, next) => {
     try {
-        const { grievanceId, comment } = req.body;
+        const { id: grievanceId } = req.params;
+        const { comment } = req.body;
         const { id, type } = req.user;
 
         let user_id = null;
