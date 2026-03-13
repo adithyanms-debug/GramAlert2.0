@@ -64,7 +64,7 @@ export function LocationPicker({ onLocationSelect, initialPosition }: LocationPi
       // Using OpenStreetMap Nominatim API for geocoding
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery + ", Karnataka, India"
+          searchQuery
         )}&limit=1`
       );
       const data = await response.json();
@@ -81,7 +81,7 @@ export function LocationPicker({ onLocationSelect, initialPosition }: LocationPi
         onLocationSelect(lat, lng);
         toast.success("Location found");
       } else {
-        toast.warning("Location not found. Please try a different search term.");
+        toast.warning("No locations found. Try a more specific search.");
       }
     } catch (error) {
       console.error("Error searching location:", error);

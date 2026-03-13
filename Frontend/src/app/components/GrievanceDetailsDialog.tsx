@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import Map, { Marker } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { SERVER_BASE_URL } from "../api";
 
 interface Grievance {
@@ -38,6 +40,8 @@ interface Grievance {
     message: string;
     author: string;
   }>;
+  latitude?: number | string;
+  longitude?: number | string;
 }
 
 interface GrievanceDetailsDialogProps {
@@ -313,6 +317,40 @@ export function GrievanceDetailsDialog({
                   </div>
                 </div>
               )}
+
+              {/* Location Map Preview */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                  <MapPin className="size-4" />
+                  Location Preview
+                </h3>
+                {(grievance.latitude && grievance.longitude) ? (
+                  <div className="w-full h-64 rounded-xl overflow-hidden border border-slate-200 relative">
+                    <Map
+                      initialViewState={{
+                        latitude: Number(grievance.latitude),
+                        longitude: Number(grievance.longitude),
+                        zoom: 14
+                      }}
+                      mapStyle="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
+                      style={{ width: "100%", height: "100%" }}
+                      interactive={true}
+                    >
+                      <Marker
+                        latitude={Number(grievance.latitude)}
+                        longitude={Number(grievance.longitude)}
+                        anchor="bottom"
+                      >
+                        <MapPin className="size-8 text-red-600 fill-red-200 stroke-red-600 stroke-[2.5]" />
+                      </Marker>
+                    </Map>
+                  </div>
+                ) : (
+                  <div className="w-full h-32 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex items-center justify-center">
+                    <p className="text-slate-500 text-sm italic">No location provided.</p>
+                  </div>
+                )}
+              </div>
 
               {/* Comments Section */}
               <div>
