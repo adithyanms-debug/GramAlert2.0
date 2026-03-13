@@ -3,9 +3,10 @@ import api from "../api";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { AlertCircle, Clock, CheckCircle2, TrendingUp, FileText, Bell } from "lucide-react";
+import { AlertCircle, Clock, CheckCircle2, TrendingUp, FileText, Bell, Image as ImageIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+import { SERVER_BASE_URL } from "../api";
 
 export default function VillagerDashboard() {
   const [userName, setUserName] = useState("Loading...");
@@ -203,29 +204,47 @@ export default function VillagerDashboard() {
                     whileHover={{ x: 4 }}
                     className="p-4 sm:p-5 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-md hover:shadow-lg transition-all"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                          <span className="text-xs sm:text-sm font-mono text-slate-500">
-                            GRV-{grievance.id}
-                          </span>
-                          <span
-                            className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[gStatus as keyof typeof statusColors] || statusColors.Received}`}
-                          >
-                            {gStatus}
-                          </span>
+                    <div className="flex flex-col sm:flex-row sm:items-start md:items-center justify-between gap-4">
+                      <div className="flex items-start gap-4 flex-1">
+                        {/* Thumbnail */}
+                        <div className="size-16 hidden sm:flex shrink-0 rounded-lg bg-slate-100 items-center justify-center overflow-hidden border border-slate-200">
+                          {grievance.file_url ? (
+                            <img
+                              src={`${SERVER_BASE_URL}${grievance.file_url}`}
+                              alt=""
+                              className="size-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="size-full bg-slate-100 flex items-center justify-center"><svg class="size-6 text-slate-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
+                              }}
+                            />
+                          ) : (
+                            <ImageIcon className="size-6 text-slate-300" />
+                          )}
                         </div>
-                        <h4 className="font-semibold text-slate-800 mb-1 text-sm sm:text-base">
-                          {grievance.title}
-                        </h4>
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
-                          <span className="capitalize">{grievance.category}</span>
-                          <span className="hidden sm:inline">•</span>
-                          <span>{new Date(grievance.created_at).toLocaleDateString()}</span>
+
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                            <span className="text-xs sm:text-sm font-mono text-slate-500">
+                              GRV-{grievance.id}
+                            </span>
+                            <span
+                              className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[gStatus as keyof typeof statusColors] || statusColors.Received}`}
+                            >
+                              {gStatus}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-slate-800 mb-1 text-sm sm:text-base">
+                            {grievance.title}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
+                            <span className="capitalize">{grievance.category}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>{new Date(grievance.created_at).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </div>
                       <button
-                        className="text-teal-600 hover:text-teal-700 font-medium text-xs sm:text-sm self-start sm:self-center"
+                        className="text-teal-600 hover:text-teal-700 font-medium text-xs sm:text-sm self-start sm:self-center shrink-0"
                         onClick={() => setSelectedGrievance(grievance)}
                       >
                         View Details

@@ -25,6 +25,7 @@ export default function SubmitGrievance() {
   const [description, setDescription] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
@@ -41,15 +42,22 @@ export default function SubmitGrievance() {
     setErrorMsg("");
 
     try {
-      const payload = {
-        title,
-        category,
-        description,
-        latitude: selectedLocation.lat,
-        longitude: selectedLocation.lng
-      };
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("category", category);
+      formData.append("description", description);
+      formData.append("latitude", selectedLocation.lat.toString());
+      formData.append("longitude", selectedLocation.lng.toString());
+      
+      if (selectedFile) {
+        formData.append("photo", selectedFile);
+      }
 
-      await api.post("grievances", payload);
+      await api.post("grievances", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       // Navigate on success
       toast.success("Grievance submitted successfully!");
@@ -70,14 +78,21 @@ export default function SubmitGrievance() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setUploadedImages(prev => [...prev, ...newImages]);
+    if (files && files.length > 0) {
+      const file = files[0];
+      setSelectedFile(file);
+      
+      // Update preview
+      const previewUrl = URL.createObjectURL(file);
+      setUploadedImages([previewUrl]); // Current UI displays first image
     }
   };
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    if (index === 0) {
+      setSelectedFile(null);
+    }
   };
 
   return (

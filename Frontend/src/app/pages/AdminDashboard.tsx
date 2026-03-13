@@ -70,7 +70,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const handleStatusUpdate = async (id: number, newStatus: string) => {
+  const handleStatusUpdate = async (id: number | string, newStatus: string) => {
     try {
       const statusMap: Record<string, string> = {
         'received': 'Received',
@@ -348,6 +348,8 @@ export default function AdminDashboard() {
         grievance={selectedGrievance}
         isOpen={!!selectedGrievance}
         onClose={() => setSelectedGrievance(null)}
+        isAdmin={true}
+        onStatusChange={handleStatusUpdate}
       />
     </DashboardLayout>
   );

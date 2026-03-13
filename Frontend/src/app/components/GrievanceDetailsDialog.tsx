@@ -3,6 +3,14 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, MapPin, Calendar, Tag, User, MessageSquare, Clock, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { SERVER_BASE_URL } from "../api";
 
 interface Grievance {
   id: string;
@@ -24,6 +32,7 @@ interface Grievance {
     message: string;
     timestamp: string;
   }>;
+  file_url?: string;
   updates?: Array<{
     date: string;
     message: string;
@@ -146,9 +155,38 @@ export function GrievanceDetailsDialog({
                       {grievance.priority} Priority
                     </span>
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-800">
-                    {grievance.title}
-                  </h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-2">
+                    <h2 className="text-2xl font-bold text-slate-800 flex-1">
+                      {grievance.title}
+                    </h2>
+                    {isAdmin && onStatusChange && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Update Status:</span>
+                        <Select
+                          defaultValue={grievance.status.toLowerCase().replace(" ", "-")}
+                          onValueChange={(val) => {
+                            const statusMap: Record<string, string> = {
+                              'received': 'Received',
+                              'in-progress': 'In Progress',
+                              'resolved': 'Resolved',
+                              'rejected': 'Rejected'
+                            };
+                            onStatusChange(grievance.id, statusMap[val] || val);
+                          }}
+                        >
+                          <SelectTrigger className="w-40 h-9 bg-white border-slate-200">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="received">Received</SelectItem>
+                            <SelectItem value="in-progress">In Progress</SelectItem>
+                            <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
@@ -238,6 +276,22 @@ export function GrievanceDetailsDialog({
                     src={grievance.image}
                     alt="Grievance"
                     className="w-full h-64 object-cover rounded-xl border border-slate-200"
+                  />
+                </div>
+              )}
+
+              {/* Backend Image (file_url) */}
+              {grievance.file_url && (
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Grievance Image</h3>
+                  <motion.img
+                    whileHover={{ scale: 1.02 }}
+                    src={`${SERVER_BASE_URL}${grievance.file_url}`}
+                    alt="Grievance evidence"
+                    className="w-full h-64 object-cover rounded-xl border border-slate-200"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                 </div>
               )}
