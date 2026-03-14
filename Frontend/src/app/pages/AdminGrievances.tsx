@@ -5,7 +5,6 @@ import api from "../api";
 import {
   Eye,
   MessageSquare,
-  Filter,
   Download,
   Search,
 } from "lucide-react";
@@ -20,6 +19,7 @@ import {
 } from "../components/ui/select";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 import { toast } from "sonner";
+import StatusBadge from "../components/StatusBadge";
 
 export default function AdminGrievances() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,7 +62,18 @@ export default function AdminGrievances() {
     try {
       await api.patch(`grievances/${id}/status`, { status: newStatus });
       toast.success(`Grievance status updated to ${newStatus}`);
-      fetchGrievances(); // Refresh list
+      
+      // Update local state immediately
+      setGrievances(prev =>
+        prev.map(g =>
+          g.id === id ? { ...g, status: newStatus } : g
+        )
+      );
+      
+      // Also update selected grievance if it's the one being modified
+      if (selectedGrievance && selectedGrievance.id === id) {
+        setSelectedGrievance({ ...selectedGrievance, status: newStatus });
+      }
     } catch (error) {
       console.error("Failed to update status", error);
       toast.error("Failed to update status");
@@ -134,6 +145,7 @@ export default function AdminGrievances() {
                 <SelectItem value="Received">Received</SelectItem>
                 <SelectItem value="In Progress">In Progress</SelectItem>
                 <SelectItem value="Resolved">Resolved</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
 
@@ -257,14 +269,7 @@ export default function AdminGrievances() {
                           </span>
                         </td>
                         <td className="py-4 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${grievance.status === "Received"
-                            ? "bg-amber-100 text-amber-700"
-                            : grievance.status === "In Progress"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-emerald-100 text-emerald-700"
-                            }`}>
-                            {grievance.status}
-                          </span>
+                          <StatusBadge status={grievance.status} />
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-1 sm:gap-2">

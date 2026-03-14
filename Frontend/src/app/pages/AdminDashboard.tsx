@@ -10,9 +10,8 @@ import {
   AlertCircle,
   TrendingUp,
   Eye,
-  MessageSquare,
-  Bell,
 } from "lucide-react";
+
 import { Button } from "../components/ui/button";
 import {
   Select,
@@ -33,12 +32,21 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+import { toast } from "sonner";
 
 export default function AdminDashboard() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [userName, setUserName] = useState("Loading...");
   const [grievances, setGrievances] = useState<any[]>([]);
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
+
+  const statusStyles: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    received: "bg-amber-100 text-amber-700 border-amber-200",
+    "in progress": "bg-blue-100 text-blue-700 border-blue-200",
+    resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    rejected: "bg-red-100 text-red-700 border-red-200"
+  };
 
   // Alert form state
   const [alertTitle, setAlertTitle] = useState("");
@@ -75,13 +83,27 @@ export default function AdminDashboard() {
       const statusMap: Record<string, string> = {
         'received': 'Received',
         'in-progress': 'In Progress',
-        'resolved': 'Resolved'
+        'resolved': 'Resolved',
+        'rejected': 'Rejected'
       };
-      await api.patch(`grievances/${id}/status`, { status: statusMap[newStatus] || newStatus });
-      fetchData(); // Refresh list
+      const formattedStatus = statusMap[newStatus] || newStatus;
+      await api.patch(`grievances/${id}/status`, { status: formattedStatus });
+      toast.success("Status updated successfully");
+      
+      // Update local state immediately
+      setGrievances(prev =>
+        prev.map(g =>
+          g.id === id ? { ...g, status: formattedStatus } : g
+        )
+      );
+
+      // Also update selected grievance if it's the one being modified
+      if (selectedGrievance && (selectedGrievance.id === id)) {
+        setSelectedGrievance({ ...selectedGrievance, status: formattedStatus });
+      }
     } catch (error) {
       console.error("Failed to update status", error);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     }
   };
 
@@ -171,7 +193,7 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Alert Management placeholder */}
+        {/* Alert Management */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -307,17 +329,22 @@ export default function AdminDashboard() {
                         <td className="py-4 px-4 hidden lg:table-cell"><span className="text-xs sm:text-sm text-slate-600">{grievance.submitted_by}</span></td>
                         <td className="py-4 px-4 hidden sm:table-cell"><span className="text-xs sm:text-sm text-slate-600">{new Date(grievance.created_at).toLocaleDateString()}</span></td>
                         <td className="py-4 px-4">
-                          <Select
-                            defaultValue={(grievance.status || "Received").toLowerCase().replace(" ", "-")}
-                            onValueChange={(val) => handleStatusUpdate(grievance.id, val)}
-                          >
-                            <SelectTrigger className="w-24 sm:w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="received">Received</SelectItem>
-                              <SelectItem value="in-progress">In Progress</SelectItem>
-                              <SelectItem value="resolved">Resolved</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              defaultValue={(grievance.status || "Received").toLowerCase().replace(" ", "-")}
+                              onValueChange={(val) => handleStatusUpdate(grievance.id, val)}
+                            >
+                              <SelectTrigger className={`w-28 sm:w-36 h-8 text-xs font-semibold ${statusStyles[(grievance.status || "Received").toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="received">Received</SelectItem>
+                                <SelectItem value="in-progress">In Progress</SelectItem>
+                                <SelectItem value="resolved">Resolved</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-1 sm:gap-2">

@@ -3,10 +3,11 @@ import api from "../api";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { AlertCircle, Clock, CheckCircle2, TrendingUp, FileText, Bell, Image as ImageIcon } from "lucide-react";
+import { Clock, CheckCircle2, TrendingUp, FileText, Bell, Image as ImageIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 import { SERVER_BASE_URL } from "../api";
+import StatusBadge from "../components/StatusBadge";
 
 export default function VillagerDashboard() {
   const [userName, setUserName] = useState("Loading...");
@@ -186,13 +187,7 @@ export default function VillagerDashboard() {
                 </Button>
               </div>
             ) : (
-              grievances.slice(0, 5).map((grievance, index) => {
-                const statusColors = {
-                  Received: "bg-amber-100 text-amber-700 border-amber-200",
-                  "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-                  Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-                };
-
+              grievances.map((grievance, index) => {
                 const gStatus = grievance.status || "Received";
 
                 return (
@@ -227,11 +222,7 @@ export default function VillagerDashboard() {
                             <span className="text-xs sm:text-sm font-mono text-slate-500">
                               GRV-{grievance.id}
                             </span>
-                            <span
-                              className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[gStatus as keyof typeof statusColors] || statusColors.Received}`}
-                            >
-                              {gStatus}
-                            </span>
+                            <StatusBadge status={gStatus} />
                           </div>
                           <h4 className="font-semibold text-slate-800 mb-1 text-sm sm:text-base">
                             {grievance.title}

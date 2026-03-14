@@ -14,6 +14,7 @@ import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import api, { SERVER_BASE_URL } from "../api";
 import { toast } from "sonner";
+import StatusBadge from "./StatusBadge";
 
 interface Grievance {
   id: string | number;
@@ -140,12 +141,7 @@ export function GrievanceDetailsDialog({
     if (onOpenChange) onOpenChange(false);
   };
 
-  const statusColors = {
-    Received: "bg-amber-100 text-amber-700 border-amber-300",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-300",
-    Resolved: "bg-emerald-100 text-emerald-700 border-emerald-300",
-    Rejected: "bg-red-100 text-red-700 border-red-300",
-  };
+
 
   const priorityColors = {
     low: "bg-slate-100 text-slate-700",
@@ -202,10 +198,7 @@ export function GrievanceDetailsDialog({
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm font-mono text-slate-500">GRV-{activeGrievance.id}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[activeGrievance.status as keyof typeof statusColors]
-                      }`}>
-                      {activeGrievance.status}
-                    </span>
+                    <StatusBadge status={activeGrievance.status} />
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${priorityColors[activeGrievance.priority as keyof typeof priorityColors]
                       }`}>
                       {activeGrievance.priority} Priority

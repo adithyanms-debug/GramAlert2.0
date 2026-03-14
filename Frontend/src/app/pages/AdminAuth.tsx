@@ -34,7 +34,7 @@ export default function AdminAuth() {
 
       // Store token
       if (response.data && response.data.token) {
-        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("admin_token", response.data.token);
       }
 
       // Check role and redirect
@@ -277,19 +277,6 @@ export default function AdminAuth() {
                 </Button>
               </motion.div>
             </form>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200"
-            >
-              <p className="text-sm text-slate-700 text-center">
-                <strong className="text-blue-700">Official Credentials:</strong><br />
-                Admin: <code className="text-blue-600 font-mono">admin</code><br />
-                Super Admin: <code className="text-blue-600 font-mono">superadmin</code>
-              </p>
-            </motion.div>
           </motion.div>
         </div>
       </motion.div>

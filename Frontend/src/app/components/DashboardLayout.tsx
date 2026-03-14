@@ -10,6 +10,7 @@ import {
   X,
   Users,
   UserPlus,
+  MapPin,
 } from "lucide-react";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { NotificationsDropdown } from "./NotificationsDropdown";
@@ -18,7 +19,6 @@ import { ROLE_THEMES } from "../constants";
 interface DashboardLayoutProps {
   children: ReactNode;
   userName?: string;
-  notifications?: number;
 }
 
 const villagerNavItems = [
@@ -31,6 +31,7 @@ const villagerNavItems = [
 const adminNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: FileText, label: "All Grievances", path: "/admin/grievances" },
+  { icon: MapPin, label: "Grievance Map", path: "/admin/map" },
   { icon: Users, label: "Villagers", path: "/admin/villagers" },
   { icon: Bell, label: "Broadcast Alerts", path: "/admin/alerts" },
 ];
@@ -45,7 +46,6 @@ const superAdminNavItems = [
 export function DashboardLayout({
   children,
   userName = "User",
-  notifications = 3,
 }: DashboardLayoutProps) {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

@@ -48,6 +48,8 @@ export default function Auth() {
 
       // Store token
       if (response.data && response.data.token) {
+        localStorage.setItem("villager_token", response.data.token);
+        // Kept for brief backwards compatibility while making widespread updates
         localStorage.setItem("token", response.data.token);
       }
 

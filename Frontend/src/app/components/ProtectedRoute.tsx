@@ -13,7 +13,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
     useEffect(() => {
         const checkAuth = async () => {
-            const token = localStorage.getItem("token");
+            let token = null;
+            if (allowedRoles.includes("SUPERADMIN")) token = localStorage.getItem("superadmin_token");
+            else if (allowedRoles.includes("ADMIN")) token = localStorage.getItem("admin_token");
+            else token = localStorage.getItem("villager_token") || localStorage.getItem("token");
             if (!token) {
                 setIsAuthorized(false);
                 return;
@@ -48,8 +51,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
     if (!isAuthorized) {
         // If not authorized, redirect to the appropriate auth page
-        if (allowedRoles.includes("SUPERADMIN")) return <Navigate to="/superadmin-auth" state={{ from: location }} />;
         if (allowedRoles.includes("ADMIN")) return <Navigate to="/admin-auth" state={{ from: location }} />;
+        if (allowedRoles.includes("SUPERADMIN")) return <Navigate to="/superadmin-auth" state={{ from: location }} />;
         return <Navigate to="/auth" state={{ from: location }} />;
     }
 

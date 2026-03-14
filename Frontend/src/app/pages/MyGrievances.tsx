@@ -14,12 +14,15 @@ import {
 } from "../components/ui/select";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 import { toast } from "sonner";
+import StatusBadge from "../components/StatusBadge";
 
 export default function MyGrievances() {
   const [grievances, setGrievances] = useState<any[]>([]);
   const [userName, setUserName] = useState("Loading...");
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,11 +46,7 @@ export default function MyGrievances() {
     fetchData();
   }, []);
 
-  const statusColors = {
-    Received: "bg-amber-100 text-amber-700 border-amber-200",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-    Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  };
+
 
   const handleViewDetails = async (grievance: any) => {
     try {
@@ -86,9 +85,11 @@ export default function MyGrievances() {
               <Input
                 placeholder="Search grievances..."
                 className="pl-11 bg-white/80 border-slate-200"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-48 bg-white/80">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -97,6 +98,7 @@ export default function MyGrievances() {
                 <SelectItem value="received">Received</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" className="gap-2">
@@ -108,12 +110,39 @@ export default function MyGrievances() {
 
         {/* Grievances List */}
         <div className="grid gap-4">
-          {grievances.length === 0 ? (
-            <div className="text-center p-12 bg-white/50 rounded-xl border border-dashed border-slate-300">
-              <p className="text-slate-500">No grievances found matching your account.</p>
-            </div>
-          ) : (
-            grievances.map((grievance, index) => {
+          {(() => {
+            const currentUserId = (() => {
+              try {
+                const token = localStorage.getItem('villager_token') || localStorage.getItem('token');
+                if (!token) return null;
+                return JSON.parse(atob(token.split('.')[1])).id;
+              } catch (e) {
+                return null;
+              }
+            })();
+
+            const filtered = grievances.filter(g => {
+              const matchesSearch = 
+                g.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                g.description?.toLowerCase().includes(searchQuery.toLowerCase());
+              
+              const matchesStatus = filterStatus === "all" || 
+                (g.status || "Received").toLowerCase().replace(" ", "-") === filterStatus;
+              
+              const matchesUser = g.user_id === currentUserId;
+
+              return matchesSearch && matchesStatus && matchesUser;
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div className="text-center p-12 bg-white/50 rounded-xl border border-dashed border-slate-300">
+                  <p className="text-slate-500">No grievances found matching your criteria.</p>
+                </div>
+              );
+            }
+
+            return filtered.map((grievance, index) => {
               const gStatus = grievance.status || "Received";
               return (
                 <motion.div
@@ -130,12 +159,7 @@ export default function MyGrievances() {
                         <span className="text-sm font-mono text-slate-500">
                           GRV-{grievance.id}
                         </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[gStatus as keyof typeof statusColors] || statusColors.Received
-                            }`}
-                        >
-                          {gStatus}
-                        </span>
+                        <StatusBadge status={gStatus} />
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 mb-2">
                         {grievance.title}
@@ -188,8 +212,8 @@ export default function MyGrievances() {
                   </div>
                 </motion.div>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       </div>
 

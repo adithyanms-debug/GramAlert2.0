@@ -16,8 +16,19 @@ const api = axios.create({
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         // Retrieve the token from localStorage
-        const token = localStorage.getItem('token');
-        if (token && config.headers) {
+        const path = window.location.pathname;
+        let token = null;
+
+        if (path.startsWith('/superadmin')) {
+            token = localStorage.getItem('superadmin_token');
+        } else if (path.startsWith('/admin')) {
+            token = localStorage.getItem('admin_token');
+        } else {
+            token = localStorage.getItem('villager_token') || localStorage.getItem('token');
+        }
+
+        const isAuthRequest = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');
+        if (token && config.headers && !isAuthRequest) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -35,8 +46,15 @@ api.interceptors.response.use(
     (error: any) => {
         if (error.response && error.response.status === 401) {
             // 401 Unauthorized: Token might be expired or invalid
-            // clear the token and demo mode
-            localStorage.removeItem('token');
+            const path = window.location.pathname;
+            if (path.startsWith('/superadmin')) {
+                localStorage.removeItem('superadmin_token');
+            } else if (path.startsWith('/admin')) {
+                localStorage.removeItem('admin_token');
+            } else {
+                localStorage.removeItem('villager_token');
+                localStorage.removeItem('token');
+            }
 
             // Check if this is an authentication request (login/register)
             const isAuthRequest = error.config.url?.includes('/auth/login') ||
