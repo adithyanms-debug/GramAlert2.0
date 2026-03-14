@@ -1,123 +1,167 @@
-# GramAlert 🏛️
+GramAlert 🏛️
 
-GramAlert is a **community grievance reporting and civic alert platform** that allows villagers to report issues and enables administrators to manage and broadcast important alerts.
+GramAlert is a community grievance reporting and civic alert platform that allows villagers to report local issues while enabling administrators to manage grievances and broadcast important alerts.
 
 The platform provides:
-* grievance submission
-* map-based issue reporting
-* community discussion via comments
-* administrative alert broadcasting
-* hierarchical governance management
 
----
+Grievance submission
 
-## Project Overview
+Map-based issue reporting
 
-GramAlert is designed to bridge the communication gap between citizens and local governance. It provides a transparent, efficient, and reactive system for monitoring and resolving local grievances while keeping the community informed through real-time alerts.
+Community discussion via comments
 
----
+Administrative alert broadcasting
 
-## Current Features
+Hierarchical governance management
 
-### User Features (Villagers)
-* **Submit grievance**: Complete with title, description, category, image upload, and interactive map location pin.
-* **Edit/Delete grievance**: Maintain control over submitted issues until they transition to "In Progress".
-* **Comment on grievances**: Engage in discussions on specific reported issues.
-* **View grievance status**: Real-time tracking of resolution progress.
-* **Map-based visualization**: See all reported issues in the community on an interactive map.
+Project Overview
 
-### Admin Features
-* **Manage grievances**: Review, categorize, and prioritize community complaints.
-* **Update grievance status**: Move grievances through the workflow (Received → In Progress → Resolved/Rejected).
-* **Broadcast alerts**: Send critical information (emergency, water, electricity, health) to all villagers.
-* **Edit/Delete alerts**: Maintain the accuracy of community broadcasts.
-* **Dashboard analytics**: High-level overview of grievance metrics and status distribution.
+GramAlert is designed to bridge the communication gap between citizens and local governance.
 
-### SuperAdmin Features
-* **Create administrators**: Recruit and manage the administrative team.
-* **System overview dashboard**: Monitor entire system activity at a glance.
-* **Manage administrators**: Control access and oversee administrative performance.
+It provides a transparent and efficient system for:
 
----
+reporting civic problems
 
-## System Architecture
+tracking resolution progress
 
-### Frontend
-```
+enabling community participation
+
+improving administrative response
+
+The platform helps local governments monitor community issues while keeping citizens informed through real-time alerts and status updates.
+
+Current Features
+User Features (Villagers)
+
+Submit grievance
+Report issues with title, description, category, image upload, and interactive map location pin.
+
+Edit/Delete grievance
+Users can manage their submitted grievances until the issue moves to In Progress.
+
+Comment on grievances
+Participate in discussions about reported problems.
+
+View grievance status
+Track grievance progress in real-time.
+
+Map-based visualization
+View reported community issues on an interactive map.
+
+Admin Features
+
+Manage grievances
+Review and organize community complaints.
+
+Update grievance status
+Workflow management:
+Received → In Progress → Resolved / Rejected
+
+Broadcast alerts
+Send announcements related to emergencies, water, electricity, or health updates.
+
+Edit/Delete alerts
+Maintain accuracy of broadcasted alerts.
+
+Dashboard analytics
+Overview of grievance statistics and system activity.
+
+SuperAdmin Features
+
+Create administrators
+Recruit and manage administrative users.
+
+System overview dashboard
+Monitor system activity and grievance metrics.
+
+Manage administrators
+Control access and oversee administrator roles.
+
+System Architecture
+Frontend
 React + TypeScript + Tailwind CSS
-```
-
-### Backend
-```
+Backend
 Node.js + Express
-```
-
-### Database
-```
+Database
 PostgreSQL
-```
+Other Technologies
 
-### Other Technologies
-```
-JWT Authentication: Secure role-based access control.
-Axios API Client: Promise-based HTTP client for data fetching.
-Leaflet / MapLibre Integration: Interactive map visualization.
-Toast Notifications (Sonner): Real-time feedback and alerts.
-```
+JWT Authentication — Secure role-based access control
 
----
+Axios API Client — Promise-based HTTP client for API communication
 
-## Project Structure
+Leaflet / MapLibre — Interactive map visualization
 
-```
+Sonner Toast Notifications — Real-time user feedback and alerts
+
+Project Structure
 GramAlert/
 │
-├── Frontend/           # React application
-│   ├── src/            # Components, pages, assets
-│   ├── docs/           # Frontend-specific documentation
-│   └── package.json    # Frontend dependencies
+├── Frontend/              # React application
+│   ├── src/               # Components, pages, assets
+│   ├── docs/              # Frontend documentation
+│   └── package.json
 │
-├── backend/            # Express server
-│   ├── src/            # Controllers, routes, middleware, services
-│   ├── docs/           # API documentation
-│   └── server.js       # Entry point
+├── backend/               # Express server
+│   ├── src/               # Controllers, routes, middleware
+│   ├── docs/              # Backend documentation
+│   └── server.js
 │
-└── README.md           # Main project documentation
-```
+└── README.md              # Main project documentation
+Documentation
 
----
+Detailed documentation for the system can be found in the following folders.
 
-## Running the Project
+Frontend Documentation
 
-### Prerequisites
-* Node.js (v18+)
-* PostgreSQL database
+Frontend Guide
 
-### Backend Setup
-```bash
+Project Structure
+
+Quick Start Guide
+
+Changelog
+
+Attributions
+
+Backend Documentation
+
+Backend Guide
+
+Running the Project
+Prerequisites
+
+Node.js v18+
+
+PostgreSQL database
+
+Backend Setup
 cd backend
 npm install
 npm run dev
-```
-
-### Frontend Setup
-```bash
+Frontend Setup
 cd Frontend
 npm install
 npm run dev
-```
-
----
-
-## Planned Features
+Planned Features
 
 Future upgrades planned for GramAlert:
-* **Priority scoring algorithm**: Automatically rank grievances based on severity and impact.
-* **Community upvote system**: Allow villagers to upvote existing issues to indicate priority.
-* **Automatic grievance escalation**: Escalate unresolved issues to higher authorities after a set duration.
-* **AI-assisted detection**: Identify duplicate complaints and categorize issues automatically.
-* **AI-generated alerts**: Automated alerts based on system events and weather data.
 
----
+Priority scoring algorithm
+Automatically rank grievances based on severity and community impact.
 
-**Made with ❤️ for better civic engagement**
+Community upvote system
+Allow villagers to upvote grievances to indicate importance.
+
+Automatic grievance escalation
+Escalate unresolved grievances to higher authorities after a defined time period.
+
+AI-assisted duplicate detection
+Detect similar complaints and group related issues.
+
+AI-generated alerts
+Automatically generate alerts based on system events and environmental data.
+
+❤️ Civic Technology Initiative
+
+Made with ❤️ to improve civic engagement, transparency, and public service efficiency.
