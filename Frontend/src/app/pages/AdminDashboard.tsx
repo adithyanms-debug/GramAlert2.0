@@ -50,7 +50,7 @@ export default function AdminDashboard() {
 
   // Alert form state
   const [alertTitle, setAlertTitle] = useState("");
-  const [alertDescription, setAlertDescription] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
   const [alertCategory, setAlertCategory] = useState("emergency");
   const [alertSeverity, setAlertSeverity] = useState("medium");
   const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
@@ -113,18 +113,17 @@ export default function AdminDashboard() {
     try {
       await api.post('alerts', {
         title: alertTitle,
-        description: alertDescription,
+        message: alertMessage,
         category: alertCategory,
         severity: alertSeverity
       });
       setIsAlertModalOpen(false);
       setAlertTitle("");
-      setAlertDescription("");
-      // Success notification could be added here
-      alert("Alert broadcasted successfully!");
+      setAlertMessage("");
+      toast.success("Alert broadcasted successfully!");
     } catch (error) {
       console.error("Failed to create alert", error);
-      alert("Failed to create alert. Please try again.");
+      toast.error("Failed to create alert. Please try again.");
     } finally {
       setIsSubmittingAlert(false);
     }
@@ -229,13 +228,13 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">Message Description</Label>
+                    <Label htmlFor="message">Message</Label>
                     <Textarea
-                      id="description"
+                      id="message"
                       placeholder="Provide details about the alert..."
                       className="min-h-[100px]"
-                      value={alertDescription}
-                      onChange={(e) => setAlertDescription(e.target.value)}
+                      value={alertMessage}
+                      onChange={(e) => setAlertMessage(e.target.value)}
                       required
                     />
                   </div>

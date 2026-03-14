@@ -1,88 +1,51 @@
 # GramAlert – Quick Start Guide 🚀
 
-## 1. Clone the Project
+## 1. Prerequisites
+- **Node.js**: v18 or higher
+- **PostgreSQL**: Running instance for the backend
 
+## 2. Clone the Project
+```bash
 git clone https://github.com/yourusername/gramalert.git
 cd gramalert
+```
 
-## 2. Install Dependencies
-
+## 3. Backend Setup
+```bash
+cd backend
 npm install
-
-## 3. Start Development Server
-
 npm run dev
+```
+The backend server will start at `http://localhost:8080`.
 
-Open in browser:
-
-http://localhost:5173
-
----
-
-# Application Routes
-
-## Villager
-
-Dashboard
-/villager
-
-Submit Grievance
-/villager/submit
-
-My Grievances
-/villager/grievances
-
-Alerts
-/villager/alerts
+## 4. Frontend Setup
+```bash
+cd Frontend
+npm install
+npm run dev
+```
+The frontend application will be available at `http://localhost:5173`.
 
 ---
 
-## Administrator
+# Application Access
 
-Dashboard
-/admin
+### Default Credentials
+- **SuperAdmin**: `superadmin / GramAlert@2026`
+- **Admin**: `admin / password`
+- **Villager**: `villager / password` (or register a new account)
 
-Manage Grievances
-/admin/grievances
+### Role-Based Portals
 
-Manage Villagers
-/admin/villagers
-
-Broadcast Alerts
-/admin/alerts
-
----
-
-## Super Administrator
-
-Dashboard
-/superadmin
-
-Manage Admins
-/superadmin/admins
-
-All Grievances
-/superadmin/grievances
-
-All Alerts
-/superadmin/alerts
+| Role | Dashboard Route |
+| --- | --- |
+| **Villager** | `/villager` |
+| **Administrator** | `/admin` |
+| **Super Administrator** | `/superadmin` |
 
 ---
 
-## Key Files
-
-src/app/pages → All application pages  
-src/app/components → Reusable components  
-src/app/types → TypeScript interfaces  
-src/app/constants → Shared constants  
-src/app/utils → Helper functions  
-src/app/data → Mock data
-
----
-
-## Next Steps
-
-Read the full documentation:
-
-PROJECT_STRUCTURE.md → architecture explanation  
-CHANGELOG.md → version history
+# Next Steps
+- Read **[`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)** for architecture details.
+- Check **[`BACKEND_GUIDE.md`](../../backend/docs/BACKEND_GUIDE.md)** for API documentation.
+- See **[`FRONTEND_GUIDE.md`](FRONTEND_GUIDE.md)** for UI implementation details.

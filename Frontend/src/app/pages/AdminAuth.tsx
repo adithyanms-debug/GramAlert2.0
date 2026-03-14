@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { Shield, Mail, Lock, ArrowLeft, Sparkles, Check } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import api from "../api";
+import { toast } from "sonner";
 
 const features = [
   "Manage Grievances",
@@ -48,7 +49,7 @@ export default function AdminAuth() {
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      alert(error.response?.data?.message || "Invalid credentials. Try: admin / password or superadmin / GramAlert@2026");
+      toast.error(error.response?.data?.message || "Invalid credentials. Try: admin / password or superadmin / GramAlert@2026");
       setIsLoading(false);
     }
   };

@@ -158,15 +158,89 @@ export const getOverdueGrievances = async (req, res, next) => {
     }
 };
 
+export const updateGrievance = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { title, description, category, latitude, longitude } = req.body;
+        const userId = req.user.id;
+
+        // Fetch grievance and check ownership
+        const grievanceResult = await query('SELECT * FROM grievances WHERE id = $1', [id]);
+        if (grievanceResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Grievance not found' });
+        }
+
+        const grievance = grievanceResult.rows[0];
+        if (grievance.user_id != userId) {
+            return res.status(403).json({ message: 'Forbidden: You do not own this grievance' });
+        }
+
+        // Check status permission (allow only if Pending or Received)
+        if (!['Pending', 'Received'].includes(grievance.status)) {
+            return res.status(403).json({ message: 'Editing not allowed after processing begins' });
+        }
+
+        // Recalculate priority if content changed
+        const priority = calculatePriority(title || grievance.title, description || grievance.description, category || grievance.category);
+
+        let file_url = grievance.file_url;
+        if (req.file) {
+            file_url = `/uploads/${req.file.filename}`;
+        }
+
+        const result = await query(
+            `UPDATE grievances 
+             SET title = $1, description = $2, category = $3, latitude = $4, longitude = $5, priority = $6, file_url = $7, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $8 RETURNING *`,
+            [
+                title || grievance.title,
+                description || grievance.description,
+                category || grievance.category,
+                latitude !== undefined ? latitude : grievance.latitude,
+                longitude !== undefined ? longitude : grievance.longitude,
+                priority,
+                file_url,
+                id
+            ]
+        );
+
+        res.json({
+            message: 'Grievance updated successfully',
+            grievance: result.rows[0]
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const deleteGrievance = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const userId = req.user.id;
+        const role = req.user.role;
 
-        const result = await query('DELETE FROM grievances WHERE id = $1 RETURNING id', [id]);
-
-        if (result.rows.length === 0) {
+        // Fetch grievance and check ownership if villager
+        const grievanceResult = await query('SELECT * FROM grievances WHERE id = $1', [id]);
+        if (grievanceResult.rows.length === 0) {
             return res.status(404).json({ message: 'Grievance not found' });
         }
+
+        const grievance = grievanceResult.rows[0];
+
+        // Authorization logic
+        if (role === 'VILLAGER') {
+            if (grievance.user_id != userId) {
+                return res.status(403).json({ message: 'Forbidden: You do not own this grievance' });
+            }
+            // Villagers can only delete if status is 'Pending'
+            if (grievance.status !== 'Pending') {
+                return res.status(403).json({ message: 'Deleting not allowed for processed grievances' });
+            }
+        } else if (role !== 'ADMIN' && role !== 'SUPERADMIN') {
+            return res.status(403).json({ message: 'Forbidden: Insufficient privileges' });
+        }
+
+        await query('DELETE FROM grievances WHERE id = $1', [id]);
 
         res.json({ message: 'Grievance deleted successfully' });
     } catch (error) {

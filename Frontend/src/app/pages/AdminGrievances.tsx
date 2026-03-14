@@ -80,17 +80,14 @@ export default function AdminGrievances() {
     }
   };
 
-  const handleAddComment = async (id: number | string, comment: string) => {
+  const handleAddComment = async (id: number | string) => {
     try {
-      await api.post(`grievances/${id}/comments`, { comment });
-      toast.success("Comment added successfully");
       // Fetch the updated grievance to show new comments in dialog
       const res = await api.get(`grievances/${id}`);
       setSelectedGrievance(res.data);
       fetchGrievances(); // Refresh list
     } catch (error) {
-      console.error("Failed to add comment", error);
-      toast.error("Failed to add comment");
+      console.error("Failed to refresh grievance after comment", error);
     }
   };
 

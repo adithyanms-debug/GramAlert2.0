@@ -22,9 +22,9 @@ api.interceptors.request.use(
         if (path.startsWith('/superadmin')) {
             token = localStorage.getItem('superadmin_token');
         } else if (path.startsWith('/admin')) {
-            token = localStorage.getItem('admin_token');
+            token = localStorage.getItem('admin_token') || localStorage.getItem('superadmin_token');
         } else {
-            token = localStorage.getItem('villager_token') || localStorage.getItem('token');
+            token = localStorage.getItem('villager_token') || localStorage.getItem('token') || localStorage.getItem('admin_token') || localStorage.getItem('superadmin_token');
         }
 
         const isAuthRequest = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');

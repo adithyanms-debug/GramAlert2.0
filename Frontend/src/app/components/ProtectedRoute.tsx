@@ -13,10 +13,20 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
     useEffect(() => {
         const checkAuth = async () => {
-            let token = null;
-            if (allowedRoles.includes("SUPERADMIN")) token = localStorage.getItem("superadmin_token");
-            else if (allowedRoles.includes("ADMIN")) token = localStorage.getItem("admin_token");
-            else token = localStorage.getItem("villager_token") || localStorage.getItem("token");
+            const getValidToken = () => {
+                const superadminToken = localStorage.getItem("superadmin_token");
+                const adminToken = localStorage.getItem("admin_token");
+                const villagerToken = localStorage.getItem("villager_token") || localStorage.getItem("token");
+
+                if (allowedRoles.includes("SUPERADMIN") && superadminToken) return superadminToken;
+                if (allowedRoles.includes("ADMIN") && adminToken) return adminToken;
+                if (allowedRoles.includes("VILLAGER") && villagerToken) return villagerToken;
+                
+                // Fallback: Return any available token if role is satisfied
+                return superadminToken || adminToken || villagerToken;
+            };
+
+            const token = getValidToken();
             if (!token) {
                 setIsAuthorized(false);
                 return;

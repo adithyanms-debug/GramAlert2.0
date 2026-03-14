@@ -149,7 +149,8 @@ export function GrievanceDetailsDialog({
     high: "bg-red-100 text-red-700",
   };
 
-  const handleAddCommentInternal = async () => {
+  const handleAddCommentInternal = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!newComment.trim()) return;
 
     try {
@@ -455,7 +456,7 @@ export function GrievanceDetailsDialog({
                             )}
 
                             {/* Add Comment Form */}
-                            <div className="mt-6 p-4 rounded-2xl bg-teal-50/50 border border-teal-100 space-y-3">
+                            <form onSubmit={handleAddCommentInternal} className="mt-6 p-4 rounded-2xl bg-teal-50/50 border border-teal-100 space-y-3">
                               <h4 className="text-sm font-semibold text-teal-800 mb-1">Add a comment</h4>
                               <Textarea
                                 value={newComment}
@@ -467,7 +468,7 @@ export function GrievanceDetailsDialog({
                               <div className="flex justify-end">
                                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                                   <Button
-                                    onClick={handleAddCommentInternal}
+                                    type="submit"
                                     disabled={!newComment.trim()}
                                     className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-lg shadow-teal-100"
                                   >
@@ -476,7 +477,7 @@ export function GrievanceDetailsDialog({
                                   </Button>
                                 </motion.div>
                               </div>
-                            </div>
+                            </form>
                           </div>
                         </motion.div>
                       )}

@@ -1,177 +1,122 @@
 # GramAlert 🏛️
 
-> A modern civic grievance management system connecting villagers and local administrators.
+GramAlert is a **community grievance reporting and civic alert platform** that allows villagers to report issues and enables administrators to manage and broadcast important alerts.
 
-📚 Full Documentation: **[`/docs`](docs)**
-
-[![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC.svg)](https://tailwindcss.com/)
-
----
-
-# ✨ Overview
-
-**GramAlert** is a civic engagement platform that enables villagers to report local issues and allows administrators to manage and resolve them efficiently.
-
-The system provides a **role-based dashboard** for villagers, administrators, and super administrators, enabling transparent communication and grievance tracking.
+The platform provides:
+* grievance submission
+* map-based issue reporting
+* community discussion via comments
+* administrative alert broadcasting
+* hierarchical governance management
 
 ---
 
-# 👥 User Roles
+## Project Overview
 
-### Villagers
-
-* Submit grievances
-* Track grievance status
-* Receive official alerts
-* View grievance history
-
-### Administrators
-
-* Manage village grievances
-* Update grievance status
-* Manage villagers
-* Broadcast alerts
-
-### Super Administrators
-
-* Manage administrators
-* Monitor all grievances
-* Oversee system activity
+GramAlert is designed to bridge the communication gap between citizens and local governance. It provides a transparent, efficient, and reactive system for monitoring and resolving local grievances while keeping the community informed through real-time alerts.
 
 ---
 
-# 🚀 Quick Start
+## Current Features
 
-### Run the Frontend
+### User Features (Villagers)
+* **Submit grievance**: Complete with title, description, category, image upload, and interactive map location pin.
+* **Edit/Delete grievance**: Maintain control over submitted issues until they transition to "In Progress".
+* **Comment on grievances**: Engage in discussions on specific reported issues.
+* **View grievance status**: Real-time tracking of resolution progress.
+* **Map-based visualization**: See all reported issues in the community on an interactive map.
 
+### Admin Features
+* **Manage grievances**: Review, categorize, and prioritize community complaints.
+* **Update grievance status**: Move grievances through the workflow (Received → In Progress → Resolved/Rejected).
+* **Broadcast alerts**: Send critical information (emergency, water, electricity, health) to all villagers.
+* **Edit/Delete alerts**: Maintain the accuracy of community broadcasts.
+* **Dashboard analytics**: High-level overview of grievance metrics and status distribution.
+
+### SuperAdmin Features
+* **Create administrators**: Recruit and manage the administrative team.
+* **System overview dashboard**: Monitor entire system activity at a glance.
+* **Manage administrators**: Control access and oversee administrative performance.
+
+---
+
+## System Architecture
+
+### Frontend
+```
+React + TypeScript + Tailwind CSS
+```
+
+### Backend
+```
+Node.js + Express
+```
+
+### Database
+```
+PostgreSQL
+```
+
+### Other Technologies
+```
+JWT Authentication: Secure role-based access control.
+Axios API Client: Promise-based HTTP client for data fetching.
+Leaflet / MapLibre Integration: Interactive map visualization.
+Toast Notifications (Sonner): Real-time feedback and alerts.
+```
+
+---
+
+## Project Structure
+
+```
+GramAlert/
+│
+├── Frontend/           # React application
+│   ├── src/            # Components, pages, assets
+│   ├── docs/           # Frontend-specific documentation
+│   └── package.json    # Frontend dependencies
+│
+├── backend/            # Express server
+│   ├── src/            # Controllers, routes, middleware, services
+│   ├── docs/           # API documentation
+│   └── server.js       # Entry point
+│
+└── README.md           # Main project documentation
+```
+
+---
+
+## Running the Project
+
+### Prerequisites
+* Node.js (v18+)
+* PostgreSQL database
+
+### Backend Setup
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### Frontend Setup
 ```bash
 cd Frontend
 npm install
 npm run dev
 ```
 
-App will start at:
-
-```
-http://localhost:3000
-```
-
-### Example Routes
-
-| Role        | Route         |
-| ----------- | ------------- |
-| Villager    | `/villager`   |
-| Admin       | `/admin`      |
-| Super Admin | `/superadmin` |
-
 ---
 
-# 🛠 Technology Stack
+## Planned Features
 
-**Frontend**
-
-* React 18
-* TypeScript
-* React Router
-* Tailwind CSS v4
-* Radix UI
-
-**Libraries**
-
-* Motion (animations)
-* Leaflet + React-Leaflet (maps)
-* React Hook Form
-* Sonner (notifications)
-* Lucide React (icons)
-
----
-
-# 📁 Project Structure
-
-```
-Gramalert2.0/
-│
-├── Frontend/
-│   └── src/app/
-│       ├── components/
-│       ├── pages/
-│       ├── types/
-│       ├── constants/
-│       ├── data/
-│       ├── utils/
-│       ├── App.tsx
-│       └── routes.ts
-│
-├── docs/
-│   ├── QUICK_START.md
-│   ├── PROJECT_STRUCTURE.md
-│   ├── CHANGELOG.md
-│   └── IMPROVEMENTS_SUMMARY.md
-│
-└── README.md
-```
-
-For detailed architecture see:
-
-🧱 **[Project Structure](docs/PROJECT_STRUCTURE.md)**
-
----
-
-# 🎨 Key Features
-
-* Role-based dashboards
-* Grievance submission & tracking
-* Location selection using maps
-* Alert broadcasting system
-* Responsive mobile-first design
-* Glassmorphism UI
-* Toast notification system
-* Error boundary & 404 handling
-
----
-
-# 📚 Documentation
-
-Detailed documentation is available in the **docs** folder.
-
-* 📘 **[Quick Start Guide](docs/QUICK_START.md)**
-* 🧱 **[Project Structure](docs/PROJECT_STRUCTURE.md)**
-* 📜 **[Changelog](docs/CHANGELOG.md)**
-* ⚡ **[Improvements Summary](docs/IMPROVEMENTS_SUMMARY.md)**
-
----
-
-# 🚀 Future Enhancements
-
-Planned improvements:
-
-* Backend API integration
-* Real-time notifications
-* Image upload support
-* Advanced search and filtering
-* Data export (CSV/PDF)
-* Multi-language support
-* Dark mode
-* Mobile app version
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome.
-
-Before contributing:
-
-1. Review the documentation in `/docs`
-2. Follow the existing project structure
-3. Maintain TypeScript type safety
-4. Use existing constants and utilities
-
----
-
-
+Future upgrades planned for GramAlert:
+* **Priority scoring algorithm**: Automatically rank grievances based on severity and impact.
+* **Community upvote system**: Allow villagers to upvote existing issues to indicate priority.
+* **Automatic grievance escalation**: Escalate unresolved issues to higher authorities after a set duration.
+* **AI-assisted detection**: Identify duplicate complaints and categorize issues automatically.
+* **AI-generated alerts**: Automated alerts based on system events and weather data.
 
 ---
 
