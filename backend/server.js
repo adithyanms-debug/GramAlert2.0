@@ -1,8 +1,10 @@
+import 'dotenv/config';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,8 +20,11 @@ import superAdminRoutes from './src/routes/superadmin.routes.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { initEscalationCron } from './src/services/escalation.service.js';
 
-dotenv.config();
 
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_USER:", process.env.DB_USER);
+console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
+console.log("DB_NAME:", process.env.DB_NAME);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

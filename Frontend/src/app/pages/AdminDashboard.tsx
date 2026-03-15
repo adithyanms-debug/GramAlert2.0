@@ -10,9 +10,8 @@ import {
   AlertCircle,
   TrendingUp,
   Eye,
-  MessageSquare,
-  Bell,
 } from "lucide-react";
+
 import { Button } from "../components/ui/button";
 import {
   Select,
@@ -33,6 +32,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+import { toast } from "sonner";
 
 export default function AdminDashboard() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -40,9 +40,17 @@ export default function AdminDashboard() {
   const [grievances, setGrievances] = useState<any[]>([]);
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
 
+  const statusStyles: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    received: "bg-amber-100 text-amber-700 border-amber-200",
+    "in progress": "bg-blue-100 text-blue-700 border-blue-200",
+    resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    rejected: "bg-red-100 text-red-700 border-red-200"
+  };
+
   // Alert form state
   const [alertTitle, setAlertTitle] = useState("");
-  const [alertDescription, setAlertDescription] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
   const [alertCategory, setAlertCategory] = useState("emergency");
   const [alertSeverity, setAlertSeverity] = useState("medium");
   const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
@@ -70,18 +78,32 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const handleStatusUpdate = async (id: number, newStatus: string) => {
+  const handleStatusUpdate = async (id: number | string, newStatus: string) => {
     try {
       const statusMap: Record<string, string> = {
         'received': 'Received',
         'in-progress': 'In Progress',
-        'resolved': 'Resolved'
+        'resolved': 'Resolved',
+        'rejected': 'Rejected'
       };
-      await api.patch(`grievances/${id}/status`, { status: statusMap[newStatus] || newStatus });
-      fetchData(); // Refresh list
+      const formattedStatus = statusMap[newStatus] || newStatus;
+      await api.patch(`grievances/${id}/status`, { status: formattedStatus });
+      toast.success("Status updated successfully");
+      
+      // Update local state immediately
+      setGrievances(prev =>
+        prev.map(g =>
+          g.id === id ? { ...g, status: formattedStatus } : g
+        )
+      );
+
+      // Also update selected grievance if it's the one being modified
+      if (selectedGrievance && (selectedGrievance.id === id)) {
+        setSelectedGrievance({ ...selectedGrievance, status: formattedStatus });
+      }
     } catch (error) {
       console.error("Failed to update status", error);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     }
   };
 
@@ -91,18 +113,17 @@ export default function AdminDashboard() {
     try {
       await api.post('alerts', {
         title: alertTitle,
-        description: alertDescription,
+        message: alertMessage,
         category: alertCategory,
         severity: alertSeverity
       });
       setIsAlertModalOpen(false);
       setAlertTitle("");
-      setAlertDescription("");
-      // Success notification could be added here
-      alert("Alert broadcasted successfully!");
+      setAlertMessage("");
+      toast.success("Alert broadcasted successfully!");
     } catch (error) {
       console.error("Failed to create alert", error);
-      alert("Failed to create alert. Please try again.");
+      toast.error("Failed to create alert. Please try again.");
     } finally {
       setIsSubmittingAlert(false);
     }
@@ -171,7 +192,7 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Alert Management placeholder */}
+        {/* Alert Management */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -207,13 +228,13 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">Message Description</Label>
+                    <Label htmlFor="message">Message</Label>
                     <Textarea
-                      id="description"
+                      id="message"
                       placeholder="Provide details about the alert..."
                       className="min-h-[100px]"
-                      value={alertDescription}
-                      onChange={(e) => setAlertDescription(e.target.value)}
+                      value={alertMessage}
+                      onChange={(e) => setAlertMessage(e.target.value)}
                       required
                     />
                   </div>
@@ -307,17 +328,22 @@ export default function AdminDashboard() {
                         <td className="py-4 px-4 hidden lg:table-cell"><span className="text-xs sm:text-sm text-slate-600">{grievance.submitted_by}</span></td>
                         <td className="py-4 px-4 hidden sm:table-cell"><span className="text-xs sm:text-sm text-slate-600">{new Date(grievance.created_at).toLocaleDateString()}</span></td>
                         <td className="py-4 px-4">
-                          <Select
-                            defaultValue={(grievance.status || "Received").toLowerCase().replace(" ", "-")}
-                            onValueChange={(val) => handleStatusUpdate(grievance.id, val)}
-                          >
-                            <SelectTrigger className="w-24 sm:w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="received">Received</SelectItem>
-                              <SelectItem value="in-progress">In Progress</SelectItem>
-                              <SelectItem value="resolved">Resolved</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              defaultValue={(grievance.status || "Received").toLowerCase().replace(" ", "-")}
+                              onValueChange={(val) => handleStatusUpdate(grievance.id, val)}
+                            >
+                              <SelectTrigger className={`w-28 sm:w-36 h-8 text-xs font-semibold ${statusStyles[(grievance.status || "Received").toLowerCase()] || "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="received">Received</SelectItem>
+                                <SelectItem value="in-progress">In Progress</SelectItem>
+                                <SelectItem value="resolved">Resolved</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-1 sm:gap-2">
@@ -348,6 +374,8 @@ export default function AdminDashboard() {
         grievance={selectedGrievance}
         isOpen={!!selectedGrievance}
         onClose={() => setSelectedGrievance(null)}
+        isAdmin={true}
+        onStatusChange={handleStatusUpdate}
       />
     </DashboardLayout>
   );

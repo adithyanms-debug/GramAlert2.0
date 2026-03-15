@@ -5,8 +5,8 @@ import api from "../api";
 import {
   Bell,
   Plus,
-  Eye,
   Trash2,
+  Pencil,
   AlertCircle,
   Info,
   AlertTriangle,
@@ -72,9 +72,11 @@ export default function AdminAlerts() {
   const [loading, setLoading] = useState(true);
   const [newAlert, setNewAlert] = useState({
     title: "",
-    description: "",
+    message: "",
     severity: "info"
   });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingAlert, setEditingAlert] = useState<any>(null);
 
   const fetchAlerts = async () => {
     try {
@@ -95,7 +97,7 @@ export default function AdminAlerts() {
 
   const handleCreateAlert = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAlert.title || !newAlert.description) {
+    if (!newAlert.title || !newAlert.message) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -104,12 +106,45 @@ export default function AdminAlerts() {
       await api.post("alerts", newAlert);
       toast.success("Alert broadcast successfully!");
       setIsAlertModalOpen(false);
-      setNewAlert({ title: "", description: "", severity: "info" });
+      setNewAlert({ title: "", message: "", severity: "info" });
       fetchAlerts();
     } catch (error) {
       console.error("Failed to create alert", error);
       toast.error("Failed to publish alert");
     }
+  };
+
+  const handleEditAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAlert.title || !editingAlert.message) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      await api.put(`alerts/${editingAlert.id}`, {
+        title: editingAlert.title,
+        message: editingAlert.message,
+        severity: editingAlert.severity
+      });
+      toast.success("Alert updated successfully!");
+      setIsEditModalOpen(false);
+      setEditingAlert(null);
+      fetchAlerts();
+    } catch (error) {
+      console.error("Failed to update alert", error);
+      toast.error("Failed to update alert");
+    }
+  };
+
+  const openEditModal = (alert: any) => {
+    setEditingAlert({
+      id: alert.id,
+      title: alert.title,
+      message: alert.message,
+      severity: alert.severity || "info"
+    });
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteAlert = async (id: number | string) => {
@@ -183,8 +218,8 @@ export default function AdminAlerts() {
                       placeholder="Enter alert message"
                       rows={4}
                       className="bg-white/80 resize-none"
-                      value={newAlert.description}
-                      onChange={(e) => setNewAlert({ ...newAlert, description: e.target.value })}
+                      value={newAlert.message}
+                      onChange={(e) => setNewAlert({ ...newAlert, message: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -216,6 +251,67 @@ export default function AdminAlerts() {
             </Dialog>
           </div>
         </motion.div>
+
+        {/* Edit Alert Dialog */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-white/60">
+            <DialogHeader>
+              <DialogTitle>Edit Alert</DialogTitle>
+              <DialogDescription>
+                Update the message for broadcast alert ALT-{editingAlert?.id}
+              </DialogDescription>
+            </DialogHeader>
+            {editingAlert && (
+              <form className="space-y-4 mt-4" onSubmit={handleEditAlert}>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-alert-title">Alert Title</Label>
+                  <Input
+                    id="edit-alert-title"
+                    placeholder="Enter alert title"
+                    className="bg-white/80"
+                    value={editingAlert.title}
+                    onChange={(e) => setEditingAlert({ ...editingAlert, title: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-alert-message">Message</Label>
+                  <Textarea
+                    id="edit-alert-message"
+                    placeholder="Enter alert message"
+                    rows={4}
+                    className="bg-white/80 resize-none"
+                    value={editingAlert.message}
+                    onChange={(e) => setEditingAlert({ ...editingAlert, message: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-severity">Severity Level</Label>
+                  <Select
+                    value={editingAlert.severity}
+                    onValueChange={(val) => setEditingAlert({ ...editingAlert, severity: val })}
+                  >
+                    <SelectTrigger className="bg-white/80">
+                      <SelectValue placeholder="Select severity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">Info</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  <Bell className="size-4 mr-2" />
+                  Update Alert
+                </Button>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Alert History */}
         <motion.div
@@ -260,7 +356,7 @@ export default function AdminAlerts() {
                         <div className="flex items-start justify-between gap-4 mb-2">
                           <div className="flex-1">
                             <h4 className="font-bold text-slate-800 mb-1">{alert.title}</h4>
-                            <p className="text-sm text-slate-600 mb-2">{alert.description}</p>
+                            <p className="text-sm text-slate-600 mb-2">{alert.message}</p>
                             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                               <span className="flex items-center gap-1">
                                 <Bell className="size-3" />
@@ -274,6 +370,14 @@ export default function AdminAlerts() {
                           </div>
 
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2"
+                              onClick={() => openEditModal(alert)}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

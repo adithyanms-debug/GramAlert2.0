@@ -8,6 +8,7 @@ import {
     createGrievance,
     updateStatus,
     getOverdueGrievances,
+    updateGrievance,
     deleteGrievance
 } from '../controllers/grievance.controller.js';
 import { auth } from '../middleware/auth.js';
@@ -51,9 +52,15 @@ router.post('/', upload.single('photo'), validate([
 router.get('/admin/overdue', isAdmin, getOverdueGrievances);
 
 router.patch('/:id/status', isAdmin, validate([
-    body('status').isIn(['Received', 'In Progress', 'Resolved']).withMessage('Invalid status'),
+    body('status').isIn(['Pending', 'Received', 'In Progress', 'Resolved', 'Rejected']).withMessage('Invalid status'),
 ]), updateStatus);
 
-router.delete('/:id', isAdmin, deleteGrievance);
+router.put('/:id', upload.single('photo'), validate([
+    body('title').notEmpty().withMessage('Title is required'),
+    body('description').notEmpty().withMessage('Description is required'),
+    body('category').notEmpty().withMessage('Category is required'),
+]), updateGrievance);
+
+router.delete('/:id', deleteGrievance);
 
 export default router;

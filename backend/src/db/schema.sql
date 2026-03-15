@@ -78,12 +78,13 @@ CREATE TABLE IF NOT EXISTS grievances (
 CREATE TABLE IF NOT EXISTS alerts (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
-    description TEXT NOT NULL,
+    message TEXT NOT NULL,
     category VARCHAR(50) NOT NULL,
     severity VARCHAR(20) DEFAULT 'medium',
     created_by_admin_id BIGINT,          -- References admins(id)
     created_by_superadmin_id BIGINT,     -- References super_admins(id)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by_superadmin_id) REFERENCES super_admins(id) ON DELETE CASCADE,
     CONSTRAINT chk_alert_creator CHECK (

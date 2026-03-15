@@ -23,16 +23,16 @@ router.use(auth, isAdmin);
 
 router.post('/', validate([
     body('title').notEmpty().withMessage('Title is required'),
-    body('description').notEmpty().withMessage('Description is required'),
-    body('category').notEmpty().withMessage('Category is required'),
-    body('severity').optional().isIn(['high', 'medium', 'low']),
+    body('message').notEmpty().withMessage('Message is required'),
+    body('category').optional(),
+    body('severity').optional().isIn(['high', 'medium', 'low', 'info']),
 ]), createAlert);
 
-router.patch('/:id', validate([
+router.put('/:id', validate([
     body('title').optional().notEmpty(),
-    body('description').optional().notEmpty(),
-    body('category').optional().notEmpty(),
-    body('severity').optional().isIn(['high', 'medium', 'low']),
+    body('message').optional().notEmpty(),
+    body('category').optional(),
+    body('severity').optional().isIn(['high', 'medium', 'low', 'info']),
 ]), updateAlert);
 
 router.delete('/:id', deleteAlert);

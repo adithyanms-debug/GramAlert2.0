@@ -50,7 +50,14 @@ export function ProfileDropdown({
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    if (isSuperAdmin) {
+      localStorage.removeItem("superadmin_token");
+    } else if (isAdminUser) {
+      localStorage.removeItem("admin_token");
+    } else {
+      localStorage.removeItem("villager_token");
+      localStorage.removeItem("token");
+    }
     navigate("/");
   };
 

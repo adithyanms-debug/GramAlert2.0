@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter } from "react-router";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AdminAuth from "./pages/AdminAuth";
@@ -17,6 +17,7 @@ import AdminProfile from "./pages/AdminProfile";
 import SuperAdminProfile from "./pages/SuperAdminProfile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import GrievanceMap from "./pages/GrievanceMap";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -133,6 +134,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]}>
         <Settings />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/map",
+    element: (
+      <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]}>
+        <GrievanceMap />
       </ProtectedRoute>
     ),
   },

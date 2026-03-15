@@ -17,6 +17,16 @@ export default defineConfig({
     },
   },
 
+  build: {
+    target: 'es2022',
+  },
+
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'es2022',
+    },
+  },
+
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

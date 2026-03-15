@@ -40,7 +40,7 @@ export default function SuperAdminAuth() {
         return;
       }
 
-      localStorage.setItem('token', token);
+      localStorage.setItem('superadmin_token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
       toast.success("Login successful! Welcome to Super Admin Portal.");

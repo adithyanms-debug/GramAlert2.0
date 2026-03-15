@@ -13,41 +13,45 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
+import { EditGrievanceDialog } from "../components/EditGrievanceDialog";
 import { toast } from "sonner";
+import StatusBadge from "../components/StatusBadge";
+import { Pencil, Trash2 } from "lucide-react";
 
 export default function MyGrievances() {
   const [grievances, setGrievances] = useState<any[]>([]);
   const [userName, setUserName] = useState("Loading...");
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [grievanceToEdit, setGrievanceToEdit] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const userRes = await api.get('users/me');
-        if (userRes.data && userRes.data.username) {
-          const name = userRes.data.username;
-          const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-          setUserName(capitalized);
-        }
-
-        const grievRes = await api.get('grievances');
-        if (grievRes.data) {
-          setGrievances(grievRes.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch grievances", error);
-        if (userName === "Loading...") setUserName("Villager");
-      }
-    };
     fetchData();
   }, []);
 
-  const statusColors = {
-    Received: "bg-amber-100 text-amber-700 border-amber-200",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-    Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  const fetchData = async () => {
+    try {
+      const userRes = await api.get('users/me');
+      if (userRes.data && userRes.data.username) {
+        const name = userRes.data.username;
+        const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+        setUserName(capitalized);
+      }
+
+      const grievRes = await api.get('grievances');
+      if (grievRes.data) {
+        setGrievances(grievRes.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch grievances", error);
+      if (userName === "Loading...") setUserName("Villager");
+    }
   };
+
+
 
   const handleViewDetails = async (grievance: any) => {
     try {
@@ -59,15 +63,30 @@ export default function MyGrievances() {
     }
   };
 
-  const handleAddComment = async (id: number | string, comment: string) => {
+  const handleAddComment = async (id: number | string) => {
     try {
-      await api.post(`grievances/${id}/comments`, { comment });
-      toast.success("Comment added successfully");
       const res = await api.get(`grievances/${id}`);
       setSelectedGrievance(res.data);
     } catch (error) {
-      console.error("Failed to add comment", error);
-      toast.error("Failed to add comment");
+      console.error("Failed to refresh grievance after comment", error);
+    }
+  };
+
+  const handleEditGrievance = (grievance: any) => {
+    setGrievanceToEdit(grievance);
+    setIsEditOpen(true);
+  };
+
+  const handleDeleteGrievance = async (id: number | string) => {
+    if (!window.confirm("Are you sure you want to delete this grievance? This action cannot be undone.")) return;
+
+    try {
+      await api.delete(`grievances/${id}`);
+      toast.success("Grievance deleted successfully");
+      fetchData();
+    } catch (error: any) {
+      console.error("Failed to delete grievance:", error);
+      toast.error(error.response?.data?.message || "Failed to delete grievance");
     }
   };
 
@@ -86,9 +105,11 @@ export default function MyGrievances() {
               <Input
                 placeholder="Search grievances..."
                 className="pl-11 bg-white/80 border-slate-200"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-48 bg-white/80">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -97,6 +118,7 @@ export default function MyGrievances() {
                 <SelectItem value="received">Received</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" className="gap-2">
@@ -108,12 +130,39 @@ export default function MyGrievances() {
 
         {/* Grievances List */}
         <div className="grid gap-4">
-          {grievances.length === 0 ? (
-            <div className="text-center p-12 bg-white/50 rounded-xl border border-dashed border-slate-300">
-              <p className="text-slate-500">No grievances found matching your account.</p>
-            </div>
-          ) : (
-            grievances.map((grievance, index) => {
+          {(() => {
+            const currentUserId = (() => {
+              try {
+                const token = localStorage.getItem('villager_token') || localStorage.getItem('token');
+                if (!token) return null;
+                return JSON.parse(atob(token.split('.')[1])).id;
+              } catch (e) {
+                return null;
+              }
+            })();
+
+            const filtered = grievances.filter(g => {
+              const matchesSearch = 
+                g.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                g.description?.toLowerCase().includes(searchQuery.toLowerCase());
+              
+              const matchesStatus = filterStatus === "all" || 
+                (g.status || "Received").toLowerCase().replace(" ", "-") === filterStatus;
+              
+              const matchesUser = g.user_id === currentUserId;
+
+              return matchesSearch && matchesStatus && matchesUser;
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div className="text-center p-12 bg-white/50 rounded-xl border border-dashed border-slate-300">
+                  <p className="text-slate-500">No grievances found matching your criteria.</p>
+                </div>
+              );
+            }
+
+            return filtered.map((grievance, index) => {
               const gStatus = grievance.status || "Received";
               return (
                 <motion.div
@@ -130,12 +179,7 @@ export default function MyGrievances() {
                         <span className="text-sm font-mono text-slate-500">
                           GRV-{grievance.id}
                         </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[gStatus as keyof typeof statusColors] || statusColors.Received
-                            }`}
-                        >
-                          {gStatus}
-                        </span>
+                        <StatusBadge status={gStatus} />
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 mb-2">
                         {grievance.title}
@@ -151,13 +195,39 @@ export default function MyGrievances() {
                         <span className="capitalize">Priority: {grievance.priority}</span>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => handleViewDetails(grievance)}
-                      className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
-                    >
-                      View Details
-                    </Button>
-                  </div>
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <Button
+                          onClick={() => handleViewDetails(grievance)}
+                          className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
+                        >
+                          View Details
+                        </Button>
+                        <div className="flex gap-2">
+                          {['Pending', 'Received'].includes(gStatus) && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleEditGrievance(grievance)}
+                              className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                              title="Edit Grievance"
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                          )}
+                          {gStatus === 'Pending' && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleDeleteGrievance(grievance.id)}
+                              className="border-red-200 text-red-600 hover:bg-red-50"
+                              title="Delete Grievance"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
                   {/* Timeline */}
                   <div className="pt-4 border-t border-slate-200">
@@ -188,8 +258,8 @@ export default function MyGrievances() {
                   </div>
                 </motion.div>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       </div>
 
@@ -198,6 +268,13 @@ export default function MyGrievances() {
         isOpen={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onAddComment={handleAddComment}
+      />
+
+      <EditGrievanceDialog
+        grievance={grievanceToEdit}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={fetchData}
       />
     </DashboardLayout>
   );
