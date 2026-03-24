@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS escalations (
     grievance_id BIGINT NOT NULL,
     escalated_to VARCHAR(100),
     escalation_level INT DEFAULT 1,
+    reason TEXT,
     escalated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (grievance_id) REFERENCES grievances(id) ON DELETE CASCADE
 );
@@ -129,6 +130,8 @@ CREATE INDEX IF NOT EXISTS idx_grievances_priority ON grievances(priority);
 CREATE INDEX IF NOT EXISTS idx_grievances_user_id ON grievances(user_id);
 CREATE INDEX IF NOT EXISTS idx_grievances_created_at ON grievances(created_at);
 CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at);
+CREATE INDEX IF NOT EXISTS idx_escalations_grievance_id ON escalations(grievance_id);
+CREATE INDEX IF NOT EXISTS idx_escalations_level ON escalations(escalation_level);
 
 -- Trigger: auto-update updated_at on grievances
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -170,21 +173,52 @@ CREATE TRIGGER trigger_set_deadline
 BEFORE INSERT ON grievances
 FOR EACH ROW EXECUTE FUNCTION set_grievance_deadline();
 
--- Stored procedure: escalate all overdue grievances
+-- Stored procedure: multi-level escalation for overdue grievances
+-- Level 1: Deadline passed → Panchayat Admin
+-- Level 2: 3+ days overdue → Block Development Officer
+-- Level 3: 7+ days overdue → District Collector
 CREATE OR REPLACE PROCEDURE escalate_overdue_grievances()
 LANGUAGE plpgsql AS $$
 DECLARE
     g RECORD;
+    days_overdue INT;
+    current_max_level INT;
 BEGIN
     FOR g IN
-        SELECT id FROM grievances
+        SELECT id, deadline, title, category FROM grievances
         WHERE deadline < NOW()
-          AND status != 'Resolved'
-          AND is_overdue = FALSE
+          AND status NOT IN ('Resolved', 'Rejected')
     LOOP
-        UPDATE grievances SET is_overdue = TRUE WHERE id = g.id;
-        INSERT INTO escalations (grievance_id, escalated_to, escalation_level)
-        VALUES (g.id, 'block-officer@district.gov.in', 1);
+        -- Mark as overdue if not already
+        UPDATE grievances SET is_overdue = TRUE WHERE id = g.id AND is_overdue = FALSE;
+
+        -- Calculate how many days overdue
+        days_overdue := EXTRACT(DAY FROM (NOW() - g.deadline));
+
+        -- Get current max escalation level for this grievance
+        SELECT COALESCE(MAX(escalation_level), 0) INTO current_max_level
+        FROM escalations WHERE grievance_id = g.id;
+
+        -- Level 1: Deadline just passed (no existing escalation)
+        IF current_max_level < 1 THEN
+            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
+            VALUES (g.id, 'Panchayat Admin', 1,
+                'Grievance "' || g.title || '" (' || g.category || ') has exceeded its resolution deadline.');
+        END IF;
+
+        -- Level 2: 3+ days overdue
+        IF days_overdue >= 3 AND current_max_level < 2 THEN
+            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
+            VALUES (g.id, 'Block Development Officer', 2,
+                'Grievance "' || g.title || '" remains unresolved for ' || days_overdue || ' days past deadline. Escalated from Panchayat level.');
+        END IF;
+
+        -- Level 3: 7+ days overdue
+        IF days_overdue >= 7 AND current_max_level < 3 THEN
+            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
+            VALUES (g.id, 'District Collector', 3,
+                'URGENT: Grievance "' || g.title || '" remains unresolved for ' || days_overdue || ' days past deadline. Escalated to highest authority.');
+        END IF;
     END LOOP;
 END;
 $$;

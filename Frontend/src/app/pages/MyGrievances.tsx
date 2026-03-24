@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, ArrowUpCircle } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import {
@@ -27,6 +27,7 @@ export default function MyGrievances() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [grievanceToEdit, setGrievanceToEdit] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [escalationMap, setEscalationMap] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     fetchData();
@@ -44,6 +45,24 @@ export default function MyGrievances() {
       const grievRes = await api.get('grievances');
       if (grievRes.data) {
         setGrievances(grievRes.data);
+
+        // Fetch escalation data for each grievance
+        try {
+          const escalationPromises = grievRes.data.map((g: any) =>
+            api.get(`escalations/grievance/${g.id}`).catch(() => ({ data: [] }))
+          );
+          const escalationResults = await Promise.all(escalationPromises);
+          const map: Record<string, any[]> = {};
+          grievRes.data.forEach((g: any, idx: number) => {
+            const escalations = escalationResults[idx].data;
+            if (escalations && escalations.length > 0) {
+              map[g.id] = escalations;
+            }
+          });
+          setEscalationMap(map);
+        } catch {
+          // Silently ignore escalation fetch errors
+        }
       }
     } catch (error) {
       console.error("Failed to fetch grievances", error);
@@ -142,13 +161,13 @@ export default function MyGrievances() {
             })();
 
             const filtered = grievances.filter(g => {
-              const matchesSearch = 
+              const matchesSearch =
                 g.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 g.description?.toLowerCase().includes(searchQuery.toLowerCase());
-              
-              const matchesStatus = filterStatus === "all" || 
+
+              const matchesStatus = filterStatus === "all" ||
                 (g.status || "Received").toLowerCase().replace(" ", "-") === filterStatus;
-              
+
               const matchesUser = g.user_id === currentUserId;
 
               return matchesSearch && matchesStatus && matchesUser;
@@ -194,40 +213,71 @@ export default function MyGrievances() {
                         <span>•</span>
                         <span className="capitalize">Priority: {grievance.priority}</span>
                       </div>
+
+                      {/* Escalation indicator for villager */}
+                      {escalationMap[grievance.id] && (() => {
+                        const escalations = escalationMap[grievance.id];
+                        const maxEsc = escalations.reduce((prev: any, curr: any) =>
+                          curr.escalation_level > prev.escalation_level ? curr : prev
+                        );
+                        const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
+                          1: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+                          2: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
+                          3: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+                        };
+                        const style = levelStyles[maxEsc.escalation_level] || levelStyles[1];
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`mt-3 p-3 rounded-lg ${style.bg} border ${style.border} flex items-start gap-2`}
+                          >
+                            <ArrowUpCircle className={`size-4 mt-0.5 flex-shrink-0 ${style.text}`} />
+                            <div>
+                              <p className={`text-xs font-bold ${style.text}`}>
+                                Escalated to {maxEsc.escalated_to}
+                              </p>
+                              <p className="text-xs text-slate-600 mt-0.5">
+                                Your complaint has been escalated to a higher authority for faster resolution.
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })()}
                     </div>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <Button
-                          onClick={() => handleViewDetails(grievance)}
-                          className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
-                        >
-                          View Details
-                        </Button>
-                        <div className="flex gap-2">
-                          {['Pending', 'Received'].includes(gStatus) && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleEditGrievance(grievance)}
-                              className="border-teal-200 text-teal-600 hover:bg-teal-50"
-                              title="Edit Grievance"
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                          )}
-                          {gStatus === 'Pending' && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleDeleteGrievance(grievance.id)}
-                              className="border-red-200 text-red-600 hover:bg-red-50"
-                              title="Delete Grievance"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          )}
-                        </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <Button
+                        onClick={() => handleViewDetails(grievance)}
+                        className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
+                      >
+                        View Details
+                      </Button>
+                      <div className="flex gap-2">
+                        {['Pending', 'Received'].includes(gStatus) && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleEditGrievance(grievance)}
+                            className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                            title="Edit Grievance"
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                        )}
+                        {gStatus === 'Pending' && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleDeleteGrievance(grievance.id)}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                            title="Delete Grievance"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
+                  </div>
 
                   {/* Timeline */}
                   <div className="pt-4 border-t border-slate-200">

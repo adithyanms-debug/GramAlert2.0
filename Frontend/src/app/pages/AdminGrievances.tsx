@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Download,
   Search,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -28,13 +29,25 @@ export default function AdminGrievances() {
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [grievances, setGrievances] = useState<any[]>([]);
+  const [escalationMap, setEscalationMap] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchGrievances = async () => {
     try {
       setLoading(true);
-      const res = await api.get("grievances");
-      setGrievances(res.data);
+      const [grievanceRes, escalationRes] = await Promise.all([
+        api.get("grievances"),
+        api.get("escalations").catch(() => ({ data: [] })),
+      ]);
+      setGrievances(grievanceRes.data);
+
+      // Build a map of grievance_id -> escalations[]
+      const map: Record<string, any[]> = {};
+      for (const esc of escalationRes.data) {
+        if (!map[esc.grievance_id]) map[esc.grievance_id] = [];
+        map[esc.grievance_id].push(esc);
+      }
+      setEscalationMap(map);
     } catch (error) {
       console.error("Failed to fetch grievances", error);
       toast.error("Could not load grievances");
@@ -62,14 +75,14 @@ export default function AdminGrievances() {
     try {
       await api.patch(`grievances/${id}/status`, { status: newStatus });
       toast.success(`Grievance status updated to ${newStatus}`);
-      
+
       // Update local state immediately
       setGrievances(prev =>
         prev.map(g =>
           g.id === id ? { ...g, status: newStatus } : g
         )
       );
-      
+
       // Also update selected grievance if it's the one being modified
       if (selectedGrievance && selectedGrievance.id === id) {
         setSelectedGrievance({ ...selectedGrievance, status: newStatus });
@@ -97,7 +110,11 @@ export default function AdminGrievances() {
       g.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       g.id?.toString().includes(searchQuery);
 
-    const matchesStatus = filterStatus === "all" || g.status?.toLowerCase() === filterStatus.toLowerCase();
+    const matchesStatus = filterStatus === "all"
+      ? true
+      : filterStatus === "Escalated"
+        ? !!escalationMap[g.id]
+        : g.status?.toLowerCase() === filterStatus.toLowerCase();
     const matchesCategory = filterCategory === "all" || g.category?.toLowerCase() === filterCategory.toLowerCase();
 
     return matchesSearch && matchesStatus && matchesCategory;
@@ -143,6 +160,7 @@ export default function AdminGrievances() {
                 <SelectItem value="In Progress">In Progress</SelectItem>
                 <SelectItem value="Resolved">Resolved</SelectItem>
                 <SelectItem value="Rejected">Rejected</SelectItem>
+                <SelectItem value="Escalated">Escalated</SelectItem>
               </SelectContent>
             </Select>
 
@@ -266,7 +284,28 @@ export default function AdminGrievances() {
                           </span>
                         </td>
                         <td className="py-4 px-4">
-                          <StatusBadge status={grievance.status} />
+                          <div className="flex items-center gap-2">
+                            <StatusBadge status={grievance.status} />
+                            {escalationMap[grievance.id] && (() => {
+                              const maxLevel = Math.max(...escalationMap[grievance.id].map((e: any) => e.escalation_level));
+                              const levelStyles: Record<number, string> = {
+                                1: 'bg-amber-100 text-amber-700 border-amber-200',
+                                2: 'bg-orange-100 text-orange-700 border-orange-200',
+                                3: 'bg-red-100 text-red-700 border-red-200',
+                              };
+                              const levelLabels: Record<number, string> = {
+                                1: 'L1',
+                                2: 'L2',
+                                3: 'L3',
+                              };
+                              return (
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${levelStyles[maxLevel] || levelStyles[1]}`}>
+                                  <AlertTriangle className="size-3" />
+                                  {levelLabels[maxLevel] || 'L1'}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-1 sm:gap-2">

@@ -15,16 +15,17 @@ import alertRoutes from './src/routes/alert.routes.js';
 import commentRoutes from './src/routes/comment.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import superAdminRoutes from './src/routes/superadmin.routes.js';
+import escalationRoutes from './src/routes/escalation.routes.js';
 
 // Import Middleware & Services
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { initEscalationCron } from './src/services/escalation.service.js';
 
 
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_USER:", process.env.DB_USER);
-console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
-console.log("DB_NAME:", process.env.DB_NAME);
+// console.log("DB_HOST:", process.env.DB_HOST);
+// console.log("DB_USER:", process.env.DB_USER);
+// console.log("DB_PASSWORD:", process.env.DB_PASSWORD);
+// console.log("DB_NAME:", process.env.DB_NAME);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -50,6 +51,7 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/grievances/:id/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/escalations', escalationRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {
