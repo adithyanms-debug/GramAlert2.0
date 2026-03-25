@@ -17,6 +17,7 @@ import { EditGrievanceDialog } from "../components/EditGrievanceDialog";
 import { toast } from "sonner";
 import StatusBadge from "../components/StatusBadge";
 import { Pencil, Trash2 } from "lucide-react";
+import UpvoteButton from "../components/UpvoteButton";
 
 export default function MyGrievances() {
   const [grievances, setGrievances] = useState<any[]>([]);
@@ -41,7 +42,7 @@ export default function MyGrievances() {
         setUserName(capitalized);
       }
 
-      const grievRes = await api.get('grievances');
+      const grievRes = await api.get('grievances/my');
       if (grievRes.data) {
         setGrievances(grievRes.data);
       }
@@ -90,6 +91,21 @@ export default function MyGrievances() {
     }
   };
 
+  const handleUpvote = async (grievanceId: string | number) => {
+    try {
+      const res = await api.post(`grievances/${grievanceId}/upvote`);
+      setGrievances(prev =>
+        prev.map(g =>
+          g.id === grievanceId
+            ? { ...g, upvote_count: res.data.upvote_count, has_upvoted: res.data.upvoted }
+            : g
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle upvote", error);
+    }
+  };
+
   return (
     <DashboardLayout userName={userName}>
       <div className="space-y-6">
@@ -131,16 +147,6 @@ export default function MyGrievances() {
         {/* Grievances List */}
         <div className="grid gap-4">
           {(() => {
-            const currentUserId = (() => {
-              try {
-                const token = localStorage.getItem('villager_token') || localStorage.getItem('token');
-                if (!token) return null;
-                return JSON.parse(atob(token.split('.')[1])).id;
-              } catch (e) {
-                return null;
-              }
-            })();
-
             const filtered = grievances.filter(g => {
               const matchesSearch = 
                 g.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -148,10 +154,8 @@ export default function MyGrievances() {
               
               const matchesStatus = filterStatus === "all" || 
                 (g.status || "Received").toLowerCase().replace(" ", "-") === filterStatus;
-              
-              const matchesUser = g.user_id === currentUserId;
 
-              return matchesSearch && matchesStatus && matchesUser;
+              return matchesSearch && matchesStatus;
             });
 
             if (filtered.length === 0) {
@@ -173,61 +177,76 @@ export default function MyGrievances() {
                   whileHover={{ x: 4 }}
                   className="p-6 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 shadow-lg hover:shadow-xl transition-all"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-sm font-mono text-slate-500">
-                          GRV-{grievance.id}
-                        </span>
-                        <StatusBadge status={gStatus} />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-2">
-                        {grievance.title}
-                      </h3>
-                      <p className="text-slate-600 leading-relaxed mb-3">
-                        {grievance.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        <span className="font-medium capitalize">{grievance.category}</span>
-                        <span>•</span>
-                        <span>{new Date(grievance.created_at).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span className="capitalize">Priority: {grievance.priority}</span>
-                      </div>
+                  <div className="flex items-start gap-4 mb-4">
+                    {/* Vote Column */}
+                    <div className="flex-shrink-0">
+                      <UpvoteButton
+                        grievanceId={grievance.id}
+                        upvoteCount={grievance.upvote_count || 0}
+                        hasUpvoted={grievance.has_upvoted}
+                        onVote={handleUpvote}
+                      />
                     </div>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <Button
-                          onClick={() => handleViewDetails(grievance)}
-                          className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
-                        >
-                          View Details
-                        </Button>
-                        <div className="flex gap-2">
-                          {['Pending', 'Received'].includes(gStatus) && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleEditGrievance(grievance)}
-                              className="border-teal-200 text-teal-600 hover:bg-teal-50"
-                              title="Edit Grievance"
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                          )}
-                          {gStatus === 'Pending' && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleDeleteGrievance(grievance.id)}
-                              className="border-red-200 text-red-600 hover:bg-red-50"
-                              title="Delete Grievance"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          )}
+
+                    {/* Main Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-sm font-mono text-slate-500">
+                              GRV-{grievance.id}
+                            </span>
+                            <StatusBadge status={gStatus} />
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-800 mb-2">
+                            {grievance.title}
+                          </h3>
+                          <p className="text-slate-600 leading-relaxed mb-3">
+                            {grievance.description}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-slate-500">
+                            <span className="font-medium capitalize">{grievance.category}</span>
+                            <span>•</span>
+                            <span>{new Date(grievance.created_at).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span className="capitalize">Priority: {grievance.priority}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
+                          <Button
+                            onClick={() => handleViewDetails(grievance)}
+                            className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
+                          >
+                            View Details
+                          </Button>
+                          <div className="flex gap-2">
+                            {['Pending', 'Received'].includes(gStatus) && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleEditGrievance(grievance)}
+                                className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                                title="Edit Grievance"
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                            )}
+                            {gStatus === 'Pending' && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handleDeleteGrievance(grievance.id)}
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                title="Delete Grievance"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  </div>
 
                   {/* Timeline */}
                   <div className="pt-4 border-t border-slate-200">

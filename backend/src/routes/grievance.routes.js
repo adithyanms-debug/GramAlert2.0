@@ -4,12 +4,14 @@ import path from 'path';
 import { body, validationResult } from 'express-validator';
 import {
     getGrievances,
+    getMyGrievances,
     getGrievanceById,
     createGrievance,
     updateStatus,
     getOverdueGrievances,
     updateGrievance,
-    deleteGrievance
+    deleteGrievance,
+    toggleUpvote
 } from '../controllers/grievance.controller.js';
 import { auth } from '../middleware/auth.js';
 import { isAdmin } from '../middleware/roleGuard.js';
@@ -41,7 +43,9 @@ router.use(auth);
 
 // Villager & Admin
 router.get('/', getGrievances);
+router.get('/my', getMyGrievances);
 router.get('/:id', getGrievanceById);
+router.post('/:id/upvote', toggleUpvote);
 router.post('/', upload.single('photo'), validate([
     body('title').notEmpty().withMessage('Title is required'),
     body('description').notEmpty().withMessage('Description is required'),

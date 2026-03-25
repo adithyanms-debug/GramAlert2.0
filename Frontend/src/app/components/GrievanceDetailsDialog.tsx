@@ -15,6 +15,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import api, { SERVER_BASE_URL } from "../api";
 import { toast } from "sonner";
 import StatusBadge from "./StatusBadge";
+import UpvoteButton from "./UpvoteButton";
 
 interface Grievance {
   id: string | number;
@@ -49,6 +50,8 @@ interface Grievance {
   latitude?: number | string;
   longitude?: number | string;
   created_at?: string;
+  has_upvoted?: boolean;
+  upvote_count?: number | string;
 }
 
 interface GrievanceDetailsDialogProps {
@@ -209,6 +212,28 @@ export function GrievanceDetailsDialog({
                     <h2 className="text-2xl font-bold text-slate-800 flex-1">
                       {activeGrievance.title}
                     </h2>
+                    {!isAdmin && (
+                      <UpvoteButton
+                        grievanceId={activeGrievance.id}
+                        upvoteCount={Number(activeGrievance.upvote_count) || 0}
+                        hasUpvoted={!!activeGrievance.has_upvoted}
+                        onVote={async () => {
+                          try {
+                            const res = await api.post(`grievances/${activeGrievance.id}/upvote`);
+                            if (localGrievance) {
+                              setLocalGrievance({
+                                ...localGrievance,
+                                upvote_count: res.data.upvote_count,
+                                has_upvoted: res.data.upvoted
+                              });
+                            }
+                          } catch (error) {
+                            console.error("Failed to toggle upvote", error);
+                            toast.error("Failed to update upvote");
+                          }
+                        }}
+                      />
+                    )}
                     {isAdmin && onStatusChange && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Update Status:</span>

@@ -1,38 +1,49 @@
 /**
- * Analyzes grievance text and assigns a priority level dynamically.
- * High/Critical: Keywords indicating safety hazards or immediate community impact.
- * Medium: Default if no keywords are matched for most issues.
- * Low: General inquiries or known non-urgent issues.
+ * Determines the severity of a grievance based on keywords in title, description, and category.
  * 
  * @param {string} title 
  * @param {string} description 
  * @param {string} category 
- * @returns {string} Priority string ('Critical', 'High', 'Medium', 'Low')
+ * @returns {string} Severity string ('Critical', 'Medium', 'Low')
  */
-export const calculatePriority = (title, description, category) => {
-    const combinedText = `${title} ${description}`.toLowerCase();
+export const determineSeverity = (title, description, category) => {
+    const combinedText = `${title} ${description} ${category}`.toLowerCase();
 
-    const criticalKeywords = ['fire', 'flood', 'accident', 'explosion', 'collapsed', 'electrocution', 'outbreak'];
-    const highKeywords = ['no water', 'power cut', 'contaminated', 'blocked', 'leak', 'broken pipe'];
-    const lowKeywords = ['inquiry', 'suggestion', 'request', 'status', 'feedback'];
+    const criticalKeywords = [
+        'water outage', 'pipe burst', 'electric', 'fire', 
+        'hospital', 'emergency', 'flood'
+    ];
+    
+    const mediumKeywords = [
+        'garbage', 'drain', 'road', 'pothole', 
+        'streetlight', 'sanitation'
+    ];
 
-    // Check critical first
     if (criticalKeywords.some(kw => combinedText.includes(kw))) {
         return 'Critical';
     }
 
-    // Check high
-    if (highKeywords.some(kw => combinedText.includes(kw))) {
-        return 'High';
+    if (mediumKeywords.some(kw => combinedText.includes(kw))) {
+        return 'Medium';
     }
 
-    // Check low
-    if (lowKeywords.some(kw => combinedText.includes(kw))) {
-        return 'Low';
-    }
+    return 'Low';
+};
 
-    // Fallbacks by category
-    if (category === 'health' || category === 'electricity') return 'High';
+/**
+ * Calculates the priority score based on severity and upvote count.
+ * 
+ * @param {string} severity 
+ * @param {number} upvoteCount 
+ * @returns {number} Priority score
+ */
+export const calculatePriority = (severity, upvoteCount) => {
+    const weights = {
+        'Critical': 20,
+        'Medium': 5,
+        'Low': 1
+    };
 
-    return 'Medium'; // Default
+    const weight = weights[severity] || 1;
+    return weight * (parseInt(upvoteCount, 10) + 1);
 };

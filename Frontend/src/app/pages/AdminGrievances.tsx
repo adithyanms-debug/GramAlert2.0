@@ -20,6 +20,7 @@ import {
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 import { toast } from "sonner";
 import StatusBadge from "../components/StatusBadge";
+import UpvoteButton from "../components/UpvoteButton";
 
 export default function AdminGrievances() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,7 +34,7 @@ export default function AdminGrievances() {
   const fetchGrievances = async () => {
     try {
       setLoading(true);
-      const res = await api.get("grievances");
+      const res = await api.get("grievances?sort=priority");
       setGrievances(res.data);
     } catch (error) {
       console.error("Failed to fetch grievances", error);
@@ -211,6 +212,15 @@ export default function AdminGrievances() {
                     <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
                       Status
                     </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700 hidden sm:table-cell">
+                      Votes
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
+                      Score
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
+                      Severity
+                    </th>
                     <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">
                       Action
                     </th>
@@ -267,6 +277,26 @@ export default function AdminGrievances() {
                         </td>
                         <td className="py-4 px-4">
                           <StatusBadge status={grievance.status} />
+                        </td>
+                        <td className="py-4 px-4 hidden sm:table-cell">
+                          <UpvoteButton
+                            grievanceId={grievance.id}
+                            upvoteCount={grievance.upvote_count || 0}
+                            hasUpvoted={false}
+                            onVote={async () => {}}
+                          />
+                        </td>
+                        <td className="py-4 px-4 text-xs sm:text-sm font-bold text-teal-600">
+                          {grievance.priority_score || 0}
+                        </td>
+                        <td className="py-4 px-4">
+                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                             grievance.severity === 'Critical' ? 'bg-red-100 text-red-700' :
+                             grievance.severity === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                             'bg-emerald-100 text-emerald-700'
+                           }`}>
+                             {grievance.severity || 'Low'}
+                           </span>
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-1 sm:gap-2">

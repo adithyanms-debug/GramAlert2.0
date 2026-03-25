@@ -61,7 +61,9 @@ CREATE TABLE IF NOT EXISTS grievances (
     description TEXT NOT NULL,
     category VARCHAR(50) NOT NULL,       -- electricity, water, roads, sanitation, health, other
     status VARCHAR(20) DEFAULT 'Received', -- Received, In Progress, Resolved
-    priority VARCHAR(20) DEFAULT 'Medium', -- High, Medium, Low
+    priority VARCHAR(20) DEFAULT 'Medium', -- DEPRECATED: do not use priority, replaced by severity + priority_score
+    severity TEXT,
+    priority_score INTEGER,
     user_id BIGINT NOT NULL,             -- References users (villagers)
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
@@ -79,6 +81,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     message TEXT NOT NULL,
+    description TEXT,
     category VARCHAR(50) NOT NULL,
     severity VARCHAR(20) DEFAULT 'medium',
     created_by_admin_id BIGINT,          -- References admins(id)

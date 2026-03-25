@@ -8,12 +8,14 @@ import { Button } from "../components/ui/button";
 import { GrievanceDetailsDialog } from "../components/GrievanceDetailsDialog";
 import { SERVER_BASE_URL } from "../api";
 import StatusBadge from "../components/StatusBadge";
+import UpvoteButton from "../components/UpvoteButton";
 
 export default function VillagerDashboard() {
   const [userName, setUserName] = useState("Loading...");
   const [grievances, setGrievances] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
+  const [isUpvoting, setIsUpvoting] = useState<string | number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +48,25 @@ export default function VillagerDashboard() {
   const totalGrievances = grievances.length;
   const inProgress = grievances.filter(g => g.status === 'In Progress').length;
   const resolved = grievances.filter(g => g.status === 'Resolved').length;
+
+  const handleUpvote = async (grievanceId: string | number) => {
+    if (isUpvoting === grievanceId) return;
+    setIsUpvoting(grievanceId);
+    try {
+      const res = await api.post(`grievances/${grievanceId}/upvote`);
+      setGrievances(prev =>
+        prev.map(g =>
+          g.id === grievanceId
+            ? { ...g, upvote_count: res.data.upvote_count, has_upvoted: res.data.upvoted }
+            : g
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle upvote", error);
+    } finally {
+      setIsUpvoting(null);
+    }
+  };
 
   return (
     <DashboardLayout userName={userName}>
@@ -201,6 +222,14 @@ export default function VillagerDashboard() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start md:items-center justify-between gap-4">
                       <div className="flex items-start gap-4 flex-1">
+                        {/* Upvote Column */}
+                        <UpvoteButton
+                          grievanceId={grievance.id}
+                          upvoteCount={grievance.upvote_count || 0}
+                          hasUpvoted={grievance.has_upvoted}
+                          onVote={handleUpvote}
+                        />
+
                         {/* Thumbnail */}
                         <div className="size-16 hidden sm:flex shrink-0 rounded-lg bg-slate-100 items-center justify-center overflow-hidden border border-slate-200">
                           {grievance.file_url ? (

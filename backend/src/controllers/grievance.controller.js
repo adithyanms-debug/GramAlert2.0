@@ -1,26 +1,22 @@
 import { query } from '../config/db.js';
-import { calculatePriority } from '../utils/priorityEngine.js';
+import { determineSeverity, calculatePriority } from '../utils/priorityEngine.js';
 
 export const getGrievances = async (req, res, next) => {
     try {
         const { status, category, priority } = req.query;
         const userId = req.user.id;
-        const role = req.user.role;
 
         let baseQuery = `
-            SELECT g.*, u.username as submitted_by 
+            SELECT g.*, u.username as submitted_by,
+                   (SELECT COUNT(*) FROM grievance_upvotes u WHERE u.grievance_id = g.id) AS upvote_count,
+                   EXISTS(SELECT 1 FROM grievance_upvotes u WHERE u.grievance_id = g.id AND u.user_id = $1) AS has_upvoted
             FROM grievances g 
             JOIN users u ON g.user_id = u.id 
             WHERE 1=1
         `;
-        const values = [];
-        let idx = 1;
+        const values = [userId];
+        let idx = 2;
 
-        // Villagers only see their own
-        if (role === 'VILLAGER') {
-            baseQuery += ` AND g.user_id = $${idx++}`;
-            values.push(userId);
-        }
 
         if (status) {
             baseQuery += ` AND g.status = $${idx++}`;
@@ -33,7 +29,52 @@ export const getGrievances = async (req, res, next) => {
         }
 
         if (priority) {
-            baseQuery += ` AND g.priority = $${idx++}`;
+            baseQuery += ` AND g.severity = $${idx++}`;
+            values.push(priority);
+        }
+
+        const { sort } = req.query;
+        if (sort === 'priority') {
+            baseQuery += ' ORDER BY g.priority_score DESC';
+        } else {
+            baseQuery += ' ORDER BY g.created_at DESC';
+        }
+
+        const result = await query(baseQuery, values);
+        res.json(result.rows);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getMyGrievances = async (req, res, next) => {
+    try {
+        const { status, category, priority } = req.query;
+        const userId = req.user.id;
+
+        let baseQuery = `
+            SELECT g.*, u.username as submitted_by,
+                   (SELECT COUNT(*) FROM grievance_upvotes u WHERE u.grievance_id = g.id) AS upvote_count,
+                   EXISTS(SELECT 1 FROM grievance_upvotes u WHERE u.grievance_id = g.id AND u.user_id = $1) AS has_upvoted
+            FROM grievances g 
+            JOIN users u ON g.user_id = u.id 
+            WHERE g.user_id = $2
+        `;
+        const values = [userId, userId];
+        let idx = 3;
+
+        if (status) {
+            baseQuery += ` AND g.status = $${idx++}`;
+            values.push(status);
+        }
+
+        if (category) {
+            baseQuery += ` AND g.category = $${idx++}`;
+            values.push(category);
+        }
+
+        if (priority) {
+            baseQuery += ` AND g.severity = $${idx++}`;
             values.push(priority);
         }
 
@@ -52,7 +93,13 @@ export const getGrievanceById = async (req, res, next) => {
         const userId = req.user.id;
         const role = req.user.role;
 
-        const result = await query('SELECT * FROM grievances WHERE id = $1', [id]);
+        const result = await query(
+            `SELECT g.*, 
+                   (SELECT COUNT(*) FROM grievance_upvotes u WHERE u.grievance_id = g.id) AS upvote_count,
+                   EXISTS(SELECT 1 FROM grievance_upvotes u WHERE u.grievance_id = g.id AND u.user_id = $2) AS has_upvoted
+             FROM grievances g WHERE id = $1`, 
+            [id, userId]
+        );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Grievance not found' });
@@ -101,14 +148,15 @@ export const createGrievance = async (req, res, next) => {
             file_url = `/uploads/${req.file.filename}`;
         }
 
-        // Determine priority
-        const priority = calculatePriority(title, description, category);
+        // Determine severity and priority score
+        const severity = determineSeverity(title, description, category);
+        const priority_score = calculatePriority(severity, 0);
 
         // Note: deadline is auto-calculated by trigger on insert
         const result = await query(
-            `INSERT INTO grievances (title, description, category, priority, user_id, latitude, longitude, file_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [title, description, category, priority, userId, latitude || null, longitude || null, file_url]
+            `INSERT INTO grievances (title, description, category, user_id, latitude, longitude, file_url, severity, priority_score)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [title, description, category, userId, latitude || null, longitude || null, file_url, severity, priority_score]
         );
 
         res.status(201).json({
@@ -180,8 +228,8 @@ export const updateGrievance = async (req, res, next) => {
             return res.status(403).json({ message: 'Editing not allowed after processing begins' });
         }
 
-        // Recalculate priority if content changed
-        const priority = calculatePriority(title || grievance.title, description || grievance.description, category || grievance.category);
+        // Recalculate severity if content changed
+        const severity = determineSeverity(title || grievance.title, description || grievance.description, category || grievance.category);
 
         let file_url = grievance.file_url;
         if (req.file) {
@@ -190,7 +238,7 @@ export const updateGrievance = async (req, res, next) => {
 
         const result = await query(
             `UPDATE grievances 
-             SET title = $1, description = $2, category = $3, latitude = $4, longitude = $5, priority = $6, file_url = $7, updated_at = CURRENT_TIMESTAMP
+             SET title = $1, description = $2, category = $3, latitude = $4, longitude = $5, severity = $6, file_url = $7, updated_at = CURRENT_TIMESTAMP
              WHERE id = $8 RETURNING *`,
             [
                 title || grievance.title,
@@ -198,7 +246,7 @@ export const updateGrievance = async (req, res, next) => {
                 category || grievance.category,
                 latitude !== undefined ? latitude : grievance.latitude,
                 longitude !== undefined ? longitude : grievance.longitude,
-                priority,
+                severity,
                 file_url,
                 id
             ]
@@ -243,6 +291,52 @@ export const deleteGrievance = async (req, res, next) => {
         await query('DELETE FROM grievances WHERE id = $1', [id]);
 
         res.json({ message: 'Grievance deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const toggleUpvote = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        // Check if vote exists
+        const voteExist = await query(
+            'SELECT id FROM grievance_upvotes WHERE grievance_id = $1 AND user_id = $2',
+            [id, userId]
+        );
+
+        let upvoted = false;
+
+        if (voteExist.rows.length > 0) {
+            // Remove vote
+            await query(
+                'DELETE FROM grievance_upvotes WHERE grievance_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+        } else {
+            // Insert vote
+            await query(
+                'INSERT INTO grievance_upvotes (grievance_id, user_id) VALUES ($1, $2)',
+                [id, userId]
+            );
+            upvoted = true;
+        }
+
+        // Return updated vote count
+        const countResult = await query(
+            'SELECT COUNT(*) AS upvote_count FROM grievance_upvotes WHERE grievance_id = $1',
+            [id]
+        );
+        const upvote_count = parseInt(countResult.rows[0].upvote_count, 10);
+
+        // DB triggers now handle recalculating priority score automatically after upvote insertion/deletion.
+
+        res.json({
+            upvoted,
+            upvote_count: upvote_count
+        });
     } catch (error) {
         next(error);
     }

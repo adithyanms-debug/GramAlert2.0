@@ -20,7 +20,7 @@ export const getAlerts = async (req, res, next) => {
 
 export const createAlert = async (req, res, next) => {
     try {
-        const { title, message, category, severity } = req.body;
+        const { title, description, category, severity } = req.body;
         const { id, type } = req.user;
 
         const alertCategory = category || 'General';
@@ -34,8 +34,8 @@ export const createAlert = async (req, res, next) => {
         }
 
         const result = await query(
-            'INSERT INTO alerts (title, message, category, severity, created_by_admin_id, created_by_superadmin_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [title, message, alertCategory, severity, adminId, superAdminId]
+            'INSERT INTO alerts (title, description, category, severity, created_by_admin_id, created_by_superadmin_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [title, description, alertCategory, severity, adminId, superAdminId]
         );
 
         res.status(201).json({
@@ -50,7 +50,7 @@ export const createAlert = async (req, res, next) => {
 export const updateAlert = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { title, message, category, severity } = req.body;
+        const { title, description, category, severity } = req.body;
 
         // Check if alert exists
         const checkResult = await query('SELECT * FROM alerts WHERE id = $1', [id]);
@@ -61,12 +61,12 @@ export const updateAlert = async (req, res, next) => {
         const result = await query(
             `UPDATE alerts 
              SET title = COALESCE($1, title), 
-                 message = COALESCE($2, message), 
+                 description = COALESCE($2, description), 
                  category = COALESCE($3, category), 
                  severity = COALESCE($4, severity),
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $5 RETURNING *`,
-            [title, message, category, severity, id]
+            [title, description, category, severity, id]
         );
 
         res.json({
