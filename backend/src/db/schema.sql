@@ -135,6 +135,7 @@ CREATE INDEX IF NOT EXISTS idx_grievances_created_at ON grievances(created_at);
 CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at);
 CREATE INDEX IF NOT EXISTS idx_escalations_grievance_id ON escalations(grievance_id);
 CREATE INDEX IF NOT EXISTS idx_escalations_level ON escalations(escalation_level);
+CREATE INDEX IF NOT EXISTS idx_grievance_upvotes_grievance_id ON grievance_upvotes(grievance_id);
 
 -- Trigger: auto-update updated_at on grievances
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -188,39 +189,49 @@ DECLARE
     current_max_level INT;
 BEGIN
     FOR g IN
-        SELECT id, deadline, title, category FROM grievances
-        WHERE deadline < NOW()
+        SELECT id, deadline, title, category, COALESCE(priority_score, 0) as priority_score FROM grievances
+        WHERE (deadline < NOW() OR COALESCE(priority_score, 0) >= 50)
           AND status NOT IN ('Resolved', 'Rejected')
     LOOP
-        -- Mark as overdue if not already
-        UPDATE grievances SET is_overdue = TRUE WHERE id = g.id AND is_overdue = FALSE;
-
         -- Calculate how many days overdue
         days_overdue := EXTRACT(DAY FROM (NOW() - g.deadline));
+
+        -- Mark as overdue if not already and deadline passed
+        IF days_overdue >= 0 THEN
+            UPDATE grievances SET is_overdue = TRUE WHERE id = g.id AND is_overdue = FALSE;
+        END IF;
 
         -- Get current max escalation level for this grievance
         SELECT COALESCE(MAX(escalation_level), 0) INTO current_max_level
         FROM escalations WHERE grievance_id = g.id;
 
+        -- Level 3: 7+ days overdue OR priority >= 80
+        IF (days_overdue >= 7 OR g.priority_score >= 80) AND current_max_level < 3 THEN
+            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
+            VALUES (g.id, 'District Collector', 3,
+                CASE WHEN g.priority_score >= 80 
+                     THEN 'URGENT: Grievance "' || g.title || '" has reached critical community priority (' || g.priority_score || '). Auto-escalated to highest authority.'
+                     ELSE 'URGENT: Grievance "' || g.title || '" remains unresolved for ' || days_overdue || ' days past deadline. Escalated to highest authority.'
+                END);
+            CONTINUE;
+        END IF;
+
+        -- Level 2: 3+ days overdue OR priority >= 50
+        IF (days_overdue >= 3 OR g.priority_score >= 50) AND current_max_level < 2 THEN
+            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
+            VALUES (g.id, 'Block Development Officer', 2,
+                CASE WHEN g.priority_score >= 50 
+                     THEN 'Grievance "' || g.title || '" has reached high community priority (' || g.priority_score || '). Escalated to Block level.'
+                     ELSE 'Grievance "' || g.title || '" remains unresolved for ' || days_overdue || ' days past deadline. Escalated from Panchayat level.'
+                END);
+            CONTINUE;
+        END IF;
+
         -- Level 1: Deadline just passed (no existing escalation)
-        IF current_max_level < 1 THEN
+        IF days_overdue >= 0 AND current_max_level < 1 THEN
             INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
             VALUES (g.id, 'Panchayat Admin', 1,
                 'Grievance "' || g.title || '" (' || g.category || ') has exceeded its resolution deadline.');
-        END IF;
-
-        -- Level 2: 3+ days overdue
-        IF days_overdue >= 3 AND current_max_level < 2 THEN
-            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
-            VALUES (g.id, 'Block Development Officer', 2,
-                'Grievance "' || g.title || '" remains unresolved for ' || days_overdue || ' days past deadline. Escalated from Panchayat level.');
-        END IF;
-
-        -- Level 3: 7+ days overdue
-        IF days_overdue >= 7 AND current_max_level < 3 THEN
-            INSERT INTO escalations (grievance_id, escalated_to, escalation_level, reason)
-            VALUES (g.id, 'District Collector', 3,
-                'URGENT: Grievance "' || g.title || '" remains unresolved for ' || days_overdue || ' days past deadline. Escalated to highest authority.');
         END IF;
     END LOOP;
 END;
