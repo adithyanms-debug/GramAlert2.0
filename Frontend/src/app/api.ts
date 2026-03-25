@@ -60,14 +60,17 @@ api.interceptors.response.use(
             const isAuthRequest = error.config.url?.includes('/auth/login') ||
                 error.config.url?.includes('/auth/register');
 
+            // Check if this is a ProtectedRoute auth check (it handles its own redirects)
+            const isAuthCheck = error.config.headers?.['X-Auth-Check'] === 'true';
+
             // Check if user is already at the landing or auth pages
             const isAtSafePage = window.location.pathname === '/' ||
                 window.location.pathname === '/auth' ||
                 window.location.pathname === '/admin-auth' ||
                 window.location.pathname === '/superadmin-auth';
 
-            // Only redirect if it's NOT an auth request and NOT already at a safe page
-            if (!isAuthRequest && !isAtSafePage) {
+            // Only redirect if it's NOT an auth request, NOT a ProtectedRoute check, and NOT already at a safe page
+            if (!isAuthRequest && !isAuthCheck && !isAtSafePage) {
                 window.location.href = '/';
             }
         }

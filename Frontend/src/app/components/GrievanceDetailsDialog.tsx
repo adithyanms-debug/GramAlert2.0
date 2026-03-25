@@ -53,6 +53,8 @@ interface Grievance {
   created_at?: string;
   has_upvoted?: boolean;
   upvote_count?: number | string;
+  is_duplicate?: boolean;
+  duplicate_of_id?: number | string;
 }
 
 interface GrievanceDetailsDialogProps {
@@ -289,6 +291,24 @@ export function GrievanceDetailsDialog({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {activeGrievance.is_duplicate && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="p-4 mb-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3"
+                >
+                  <AlertTriangle className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-amber-800">AI Flag: Potential Duplicate</h4>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Our AI system has detected that this grievance is highly similar to another report
+                      (<strong>GRV-{activeGrievance.duplicate_of_id}</strong>).
+                      Consider merging or linking these reports to avoid redundant work.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
               {loading && !localGrievance ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
@@ -391,7 +411,7 @@ export function GrievanceDetailsDialog({
                             >
                               {/* Timeline dot */}
                               <div className={`absolute -left-[17px] top-5 size-3 rounded-full border-2 border-white shadow-sm ${esc.escalation_level === 1 ? 'bg-amber-400' :
-                                  esc.escalation_level === 2 ? 'bg-orange-400' : 'bg-red-500'
+                                esc.escalation_level === 2 ? 'bg-orange-400' : 'bg-red-500'
                                 }`} />
                               <div className="flex items-start justify-between mb-1">
                                 <span className={`text-xs font-bold ${config.color} uppercase tracking-wider`}>

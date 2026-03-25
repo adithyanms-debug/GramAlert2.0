@@ -21,7 +21,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
                 if (allowedRoles.includes("SUPERADMIN") && superadminToken) return superadminToken;
                 if (allowedRoles.includes("ADMIN") && adminToken) return adminToken;
                 if (allowedRoles.includes("VILLAGER") && villagerToken) return villagerToken;
-                
+
                 // Fallback: Return any available token if role is satisfied
                 return superadminToken || adminToken || villagerToken;
             };
@@ -33,7 +33,9 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
             }
 
             try {
-                const response = await api.get("users/me");
+                const response = await api.get("users/me", {
+                    headers: { Authorization: `Bearer ${token}`, 'X-Auth-Check': 'true' },
+                });
                 const userRole = response.data.role;
 
                 if (allowedRoles.includes(userRole)) {

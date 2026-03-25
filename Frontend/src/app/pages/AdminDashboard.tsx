@@ -308,7 +308,7 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        {/* Grievances Table */}
+        {/* Grievance Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -323,6 +323,7 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle">
               <table className="min-w-full">
+                {/* ... table content remains same ... */}
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="text-left py-3 px-4 text-xs sm:text-sm font-semibold text-slate-700">ID</th>
@@ -394,6 +395,8 @@ export default function AdminDashboard() {
             </div>
           </div>
         </motion.div>
+
+
       </div>
 
       <GrievanceDetailsDialog

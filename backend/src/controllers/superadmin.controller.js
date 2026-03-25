@@ -97,3 +97,22 @@ export const deleteAdmin = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getSentimentStats = async (req, res, next) => {
+    try {
+        const result = await query(`
+            SELECT 
+                p.id as panchayat_id,
+                p.name as panchayat_name,
+                AVG(g.sentiment_score) as avg_sentiment,
+                COUNT(g.id) as total_grievances
+            FROM panchayats p
+            LEFT JOIN grievances g ON p.id = g.panchayat_id
+            GROUP BY p.id, p.name
+            ORDER BY avg_sentiment ASC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        next(error);
+    }
+};

@@ -18,6 +18,7 @@ import SuperAdminProfile from "./pages/SuperAdminProfile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import GrievanceMap from "./pages/GrievanceMap";
+import Rankings from "./pages/Rankings";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -88,6 +89,14 @@ export const router = createBrowserRouter([
     ),
   },
 
+  {
+    path: "/villager/rankings",
+    element: (
+      <ProtectedRoute allowedRoles={["VILLAGER"]}>
+        <Rankings />
+      </ProtectedRoute>
+    ),
+  },
   // Admin Routes
   {
     path: "/admin",
@@ -146,6 +155,14 @@ export const router = createBrowserRouter([
     ),
   },
 
+  {
+    path: "/admin/rankings",
+    element: (
+      <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]}>
+        <Rankings />
+      </ProtectedRoute>
+    ),
+  },
   // Super Admin Routes
   {
     path: "/superadmin",
@@ -196,6 +213,14 @@ export const router = createBrowserRouter([
     ),
   },
 
+  {
+    path: "/superadmin/rankings",
+    element: (
+      <ProtectedRoute allowedRoles={["SUPERADMIN"]}>
+        <Rankings />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "*",
     Component: NotFound,

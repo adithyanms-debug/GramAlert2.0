@@ -71,6 +71,8 @@ export default function VillagerDashboard() {
   return (
     <DashboardLayout userName={userName}>
       <div className="space-y-8">
+
+
         {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -282,6 +284,6 @@ export default function VillagerDashboard() {
         isOpen={!!selectedGrievance}
         onClose={() => setSelectedGrievance(null)}
       />
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

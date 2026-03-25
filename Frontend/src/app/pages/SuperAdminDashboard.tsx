@@ -13,6 +13,7 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
+import { SentimentAnalysis } from "../components/SentimentAnalysis";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -95,7 +96,7 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     fetchData();
     // Fetch panchayats for dropdown
-    api.get("panchayats").then(res => setPanchayats(res.data || [])).catch(() => {});
+    api.get("panchayats").then(res => setPanchayats(res.data || [])).catch(() => { });
   }, []);
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
@@ -382,6 +383,10 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         </motion.div>
+
+        {/* Community Sentiment Analysis */}
+        <SentimentAnalysis />
+
 
         {/* Grievance Overview by Category */}
         <motion.div

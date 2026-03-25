@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,6 +15,20 @@ const setupDB = async () => {
         console.log('Executing schema...');
         await query(schemaQuery);
 
+        // Run migrations
+        const migrationsDir = path.join(__dirname, 'src', 'db', 'migrations');
+        if (fs.existsSync(migrationsDir)) {
+            const migrationFiles = fs.readdirSync(migrationsDir)
+                .filter(f => f.endsWith('.sql'))
+                .sort();
+
+            for (const file of migrationFiles) {
+                console.log(`Running migration: ${file}...`);
+                const migrationQuery = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+                await query(migrationQuery);
+            }
+        }
+
         console.log('Reading seed.sql...');
         const seedQuery = fs.readFileSync(path.join(__dirname, 'src', 'db', 'seed.sql'), 'utf-8');
 
@@ -29,3 +44,4 @@ const setupDB = async () => {
 };
 
 setupDB();
+

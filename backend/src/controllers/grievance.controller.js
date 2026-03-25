@@ -1,5 +1,6 @@
 import { query } from '../config/db.js';
 import { determineSeverity, calculatePriority } from '../utils/priorityEngine.js';
+import { analyzeSentiment, generateEmbedding, findPotentialDuplicates } from '../services/ai.service.js';
 
 export const getGrievances = async (req, res, next) => {
     try {
@@ -112,7 +113,7 @@ export const getGrievanceById = async (req, res, next) => {
             `SELECT g.*, 
                    (SELECT COUNT(*) FROM grievance_upvotes u WHERE u.grievance_id = g.id) AS upvote_count,
                    EXISTS(SELECT 1 FROM grievance_upvotes u WHERE u.grievance_id = g.id AND u.user_id = $2) AS has_upvoted
-             FROM grievances g WHERE id = $1`, 
+             FROM grievances g WHERE id = $1`,
             [id, userId]
         );
 
@@ -173,11 +174,31 @@ export const createGrievance = async (req, res, next) => {
         const severity = determineSeverity(title, description, category);
         const priority_score = calculatePriority(severity, 0);
 
+        // AI Analysis: Sentiment and Embedding
+        const sentiment_score = await analyzeSentiment(`${title}. ${description}`);
+        const embedding = await generateEmbedding(`${title}. ${description}`);
+
+        // Duplicate Detection: Check last 50 grievances in the same panchayat
+        let is_duplicate = false;
+        let duplicate_of_id = null;
+
+        if (embedding) {
+            const recentGrievances = await query(
+                'SELECT id, embedding FROM grievances WHERE panchayat_id = $1 AND status != $2 ORDER BY created_at DESC LIMIT 50',
+                [panchayatId, 'Resolved']
+            );
+            const duplicateInfo = await findPotentialDuplicates(embedding, recentGrievances.rows);
+            if (duplicateInfo) {
+                is_duplicate = true;
+                duplicate_of_id = duplicateInfo.duplicate_of_id;
+            }
+        }
+
         // Note: deadline is auto-calculated by trigger on insert
         const result = await query(
-            `INSERT INTO grievances (title, description, category, user_id, latitude, longitude, file_url, severity, priority_score, panchayat_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-            [title, description, category, userId, latitude || null, longitude || null, file_url, severity, priority_score, panchayatId]
+            `INSERT INTO grievances (title, description, category, user_id, latitude, longitude, file_url, severity, priority_score, panchayat_id, sentiment_score, embedding, is_duplicate, duplicate_of_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+            [title, description, category, userId, latitude || null, longitude || null, file_url, severity, priority_score, panchayatId, sentiment_score, embedding ? JSON.stringify(embedding) : null, is_duplicate, duplicate_of_id]
         );
 
         res.status(201).json({

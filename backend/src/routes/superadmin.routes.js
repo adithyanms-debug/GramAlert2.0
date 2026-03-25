@@ -5,7 +5,8 @@ import {
     getGrievanceStats,
     getAllAdmins,
     createAdmin,
-    deleteAdmin
+    deleteAdmin,
+    getSentimentStats
 } from '../controllers/superadmin.controller.js';
 import { auth } from '../middleware/auth.js';
 import { isSuperAdmin } from '../middleware/roleGuard.js';
@@ -33,6 +34,7 @@ router.use(auth, isSuperAdmin);
 router.get('/stats', getStats);
 router.get('/grievance-stats', getGrievanceStats);
 router.get('/admins', getAllAdmins);
+router.get('/sentiment-stats', getSentimentStats);
 
 router.post('/admins', validate([
     body('username').notEmpty().withMessage('Username is required').isLength({ min: 3 }),

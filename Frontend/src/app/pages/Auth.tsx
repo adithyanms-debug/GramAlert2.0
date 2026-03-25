@@ -21,17 +21,32 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [panchayats, setPanchayats] = useState<{id: number; name: string}[]>([]);
+  const [panchayats, setPanchayats] = useState<{ id: number; name: string }[]>([]);
   const [selectedPanchayat, setSelectedPanchayat] = useState("");
   const navigate = useNavigate();
+
+  // Fallback panchayat data (from 002_panchayat_system.sql migration)
+  const fallbackPanchayats = [
+    { id: 1, name: 'Kodakara' },
+    { id: 2, name: 'Chalakudy' },
+    { id: 3, name: 'Irinjalakuda' },
+    { id: 4, name: 'Mala' },
+    { id: 5, name: 'Annamanada' },
+    { id: 6, name: 'Koratty' },
+    { id: 7, name: 'Pariyaram' },
+    { id: 8, name: 'Melur' },
+    { id: 9, name: 'Aloor' },
+    { id: 10, name: 'Puthukkad' },
+  ];
 
   useEffect(() => {
     const fetchPanchayats = async () => {
       try {
         const res = await api.get('panchayats');
-        setPanchayats(res.data);
+        setPanchayats(res.data && res.data.length > 0 ? res.data : fallbackPanchayats);
       } catch (err) {
-        console.error('Failed to fetch panchayats');
+        console.error('Failed to fetch panchayats, using fallback data');
+        setPanchayats(fallbackPanchayats);
       }
     };
     fetchPanchayats();

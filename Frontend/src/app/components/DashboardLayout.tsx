@@ -11,6 +11,7 @@ import {
   Users,
   UserPlus,
   MapPin,
+  Trophy,
 } from "lucide-react";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { NotificationsDropdown } from "./NotificationsDropdown";
@@ -25,6 +26,7 @@ const villagerNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/villager" },
   { icon: FileText, label: "Submit Grievance", path: "/villager/submit" },
   { icon: List, label: "My Grievances", path: "/villager/grievances" },
+  { icon: Trophy, label: "Village Rankings", path: "/villager/rankings" },
   { icon: Bell, label: "Alerts", path: "/villager/alerts" },
 ];
 
@@ -33,6 +35,7 @@ const adminNavItems = [
   { icon: FileText, label: "All Grievances", path: "/admin/grievances" },
   { icon: MapPin, label: "Grievance Map", path: "/admin/map" },
   { icon: Users, label: "Villagers", path: "/admin/villagers" },
+  { icon: Trophy, label: "Global Rankings", path: "/admin/rankings" },
   { icon: Bell, label: "Broadcast Alerts", path: "/admin/alerts" },
 ];
 
@@ -40,6 +43,7 @@ const superAdminNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/superadmin" },
   { icon: UserPlus, label: "Manage Admins", path: "/superadmin/admins" },
   { icon: FileText, label: "All Grievances", path: "/superadmin/grievances" },
+  { icon: Trophy, label: "Leaderboard", path: "/superadmin/rankings" },
   { icon: Bell, label: "All Alerts", path: "/superadmin/alerts" },
 ];
 
