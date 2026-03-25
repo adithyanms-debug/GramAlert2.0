@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, MapPin, Calendar, Tag, User, MessageSquare, Clock, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { X, MapPin, Calendar, Tag, User, MessageSquare, Clock, Send, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import {
@@ -49,6 +49,7 @@ interface Grievance {
   }>;
   latitude?: number | string;
   longitude?: number | string;
+  is_overdue?: boolean;
   created_at?: string;
   has_upvoted?: boolean;
   upvote_count?: number | string;
@@ -79,6 +80,13 @@ export function GrievanceDetailsDialog({
   const [commentsVisible, setCommentsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localGrievance, setLocalGrievance] = useState<Grievance | null>(null);
+  const [escalations, setEscalations] = useState<Array<{
+    id: number;
+    escalation_level: number;
+    escalated_to: string;
+    reason: string;
+    escalated_at: string;
+  }>>([]);
   const [comments, setComments] = useState<Array<{
     id: number;
     user: string;
@@ -95,13 +103,17 @@ export function GrievanceDetailsDialog({
       const fetchGrievanceDetails = async () => {
         setLoading(true);
         try {
-          const res = await api.get(`grievances/${initialGrievance.id}`);
-          setLocalGrievance(res.data);
-          setCommentsVisible(false); // Reset collapse state on new open
+          const [grievanceRes, escalationRes] = await Promise.all([
+            api.get(`grievances/${initialGrievance.id}`),
+            api.get(`escalations/grievance/${initialGrievance.id}`)
+          ]);
+          setLocalGrievance(grievanceRes.data);
+          setEscalations(escalationRes.data || []);
+          setCommentsVisible(false);
         } catch (error) {
           console.error("Failed to fetch grievance details", error);
-          // Fallback to initial if fetch fails
           setLocalGrievance(initialGrievance);
+          setEscalations([]);
         } finally {
           setLoading(false);
         }
@@ -109,6 +121,7 @@ export function GrievanceDetailsDialog({
       fetchGrievanceDetails();
     } else if (!dialogIsOpen) {
       setLocalGrievance(null);
+      setEscalations([]);
       setComments([]);
     }
   }, [dialogIsOpen, initialGrievance]);
@@ -160,11 +173,11 @@ export function GrievanceDetailsDialog({
       await api.post(`grievances/${activeGrievance.id}/comments`, { comment: newComment });
       toast.success("Comment added successfully");
       setNewComment("");
-      
+
       // Refresh grievance to show new comment
       const res = await api.get(`grievances/${activeGrievance.id}`);
       setLocalGrievance(res.data);
-      
+
       // If external callback provided, call it
       if (onAddComment) {
         onAddComment(activeGrievance.id.toString(), newComment);
@@ -350,6 +363,58 @@ export function GrievanceDetailsDialog({
                     )}
                   </div>
 
+                  {/* Escalation History */}
+                  {escalations.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                        <ShieldAlert className="size-4 text-red-500" />
+                        Escalation History
+                      </h3>
+                      <div className="relative pl-6 space-y-4">
+                        {/* Vertical timeline line */}
+                        <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-amber-300 via-orange-400 to-red-500 rounded-full" />
+
+                        {escalations.map((esc, idx) => {
+                          const levelConfig: Record<number, { color: string; bgColor: string; borderColor: string; icon: string; label: string }> = {
+                            1: { color: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', icon: '⚠️', label: 'Level 1 — Panchayat' },
+                            2: { color: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', icon: '🔶', label: 'Level 2 — Block' },
+                            3: { color: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-200', icon: '🔴', label: 'Level 3 — District' },
+                          };
+                          const config = levelConfig[esc.escalation_level] || levelConfig[1];
+                          return (
+                            <motion.div
+                              key={esc.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                              className={`relative p-4 rounded-xl ${config.bgColor} border ${config.borderColor}`}
+                            >
+                              {/* Timeline dot */}
+                              <div className={`absolute -left-[17px] top-5 size-3 rounded-full border-2 border-white shadow-sm ${esc.escalation_level === 1 ? 'bg-amber-400' :
+                                  esc.escalation_level === 2 ? 'bg-orange-400' : 'bg-red-500'
+                                }`} />
+                              <div className="flex items-start justify-between mb-1">
+                                <span className={`text-xs font-bold ${config.color} uppercase tracking-wider`}>
+                                  {config.icon} {config.label}
+                                </span>
+                                <span className="text-[10px] sm:text-xs text-slate-500 flex items-center gap-1">
+                                  <Clock className="size-3" />
+                                  {new Date(esc.escalated_at).toLocaleString()}
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold text-slate-700 mb-1">
+                                Escalated to: <span className={config.color}>{esc.escalated_to}</span>
+                              </p>
+                              {esc.reason && (
+                                <p className="text-xs text-slate-600 leading-relaxed">{esc.reason}</p>
+                              )}
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Backend Image (file_url) */}
                   {activeGrievance.file_url && (
                     <div>
@@ -516,4 +581,4 @@ export function GrievanceDetailsDialog({
       )}
     </AnimatePresence>
   );
-}
+}

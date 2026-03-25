@@ -15,10 +15,12 @@ import alertRoutes from './src/routes/alert.routes.js';
 import commentRoutes from './src/routes/comment.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import superAdminRoutes from './src/routes/superadmin.routes.js';
+import escalationRoutes from './src/routes/escalation.routes.js';
 
 // Import Middleware & Services
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { initEscalationCron } from './src/services/escalation.service.js';
+
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -46,6 +48,7 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/grievances/:id/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/escalations', escalationRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {

@@ -10,6 +10,7 @@ import {
   AlertCircle,
   TrendingUp,
   Eye,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Button } from "../components/ui/button";
@@ -38,6 +39,7 @@ export default function AdminDashboard() {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [userName, setUserName] = useState("Loading...");
   const [grievances, setGrievances] = useState<any[]>([]);
+  const [escalatedCount, setEscalatedCount] = useState(0);
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
 
   const statusStyles: Record<string, string> = {
@@ -68,6 +70,23 @@ export default function AdminDashboard() {
       if (grievRes.data) {
         setGrievances(grievRes.data);
       }
+
+      // Fetch escalation data and show toast
+      try {
+        const escRes = await api.get('escalations');
+        const escalations = escRes.data || [];
+        if (escalations.length > 0) {
+          // Count unique grievances that are escalated
+          const uniqueGrievanceIds = new Set(escalations.map((e: any) => e.grievance_id));
+          setEscalatedCount(uniqueGrievanceIds.size);
+          toast.warning(
+            `⚠️ ${uniqueGrievanceIds.size} grievance${uniqueGrievanceIds.size > 1 ? 's have' : ' has'} been escalated and need${uniqueGrievanceIds.size === 1 ? 's' : ''} urgent attention!`,
+            { duration: 6000 }
+          );
+        }
+      } catch {
+        // Silently ignore if escalation fetch fails
+      }
     } catch (error) {
       console.error("Failed to fetch admin dashboard data", error);
       if (userName === "Loading...") setUserName("Administrator");
@@ -89,7 +108,7 @@ export default function AdminDashboard() {
       const formattedStatus = statusMap[newStatus] || newStatus;
       await api.patch(`grievances/${id}/status`, { status: formattedStatus });
       toast.success("Status updated successfully");
-      
+
       // Update local state immediately
       setGrievances(prev =>
         prev.map(g =>
@@ -167,6 +186,13 @@ export default function AdminDashboard() {
               value: resolved,
               color: "from-emerald-500 to-teal-500",
               change: totalGrievances > 0 ? (resolved / totalGrievances * 100).toFixed(0) + "% success rate" : "No data",
+            },
+            {
+              icon: ShieldAlert,
+              label: "Escalated",
+              value: escalatedCount,
+              color: "from-red-500 to-rose-500",
+              change: escalatedCount > 0 ? "Need urgent attention" : "All clear",
             },
           ].map((stat, index) => (
             <motion.div
