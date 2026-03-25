@@ -135,7 +135,7 @@ export default function VillagerDashboard() {
                       </div>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">
-                      {alert.description}
+                      {alert.message}
                     </p>
                   </motion.div>
                 );

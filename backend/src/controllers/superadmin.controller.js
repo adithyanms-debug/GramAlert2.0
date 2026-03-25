@@ -46,8 +46,18 @@ export const getAllAdmins = async (req, res, next) => {
 
 export const createAdmin = async (req, res, next) => {
     try {
-        const { username, email, password, phone, department, division } = req.body;
+        const { username, email, password, phone, department, division, panchayat_id } = req.body;
         const superAdminId = req.user.id;
+
+        // Validate panchayat_id against DB
+        if (!panchayat_id) {
+            return res.status(400).json({ message: 'panchayat_id is required' });
+        }
+        const panchayatCheck = await query('SELECT id FROM panchayats WHERE id = $1', [panchayat_id]);
+        if (panchayatCheck.rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid panchayat_id' });
+        }
+        const assignedPanchayatId = panchayat_id;
 
         const normalizedEmail = email.toLowerCase();
 
@@ -61,10 +71,10 @@ export const createAdmin = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Insert admin with creator link to super_admins
+        // Insert admin with creator link to super_admins and panchayat assignment
         const result = await query(
-            'INSERT INTO admins (username, email, password, phone, role, department, division, created_by_superadmin_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, email',
-            [username, normalizedEmail, hashedPassword, phone, 'ADMIN', department, division, superAdminId]
+            'INSERT INTO admins (username, email, password, phone, role, department, division, created_by_superadmin_id, panchayat_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, username, email, panchayat_id',
+            [username, normalizedEmail, hashedPassword, phone, 'ADMIN', department, division, superAdminId, assignedPanchayatId]
         );
 
         res.status(201).json(result.rows[0]);

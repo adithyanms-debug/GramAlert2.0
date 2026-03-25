@@ -146,7 +146,7 @@ export default function Alerts() {
                       </div>
 
                       <p className="text-slate-700 leading-relaxed mb-3">
-                        {alert.description}
+                        {alert.message}
                       </p>
 
                       <div className="flex items-center gap-3">

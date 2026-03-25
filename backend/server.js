@@ -16,6 +16,7 @@ import commentRoutes from './src/routes/comment.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import superAdminRoutes from './src/routes/superadmin.routes.js';
 import escalationRoutes from './src/routes/escalation.routes.js';
+import panchayatRoutes from './src/routes/panchayat.routes.js';
 
 // Import Middleware & Services
 import { errorHandler } from './src/middleware/errorHandler.js';
@@ -49,6 +50,7 @@ app.use('/api/grievances/:id/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/escalations', escalationRoutes);
+app.use('/api/panchayats', panchayatRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { useLocation } from "react-router";
@@ -31,42 +31,65 @@ import {
 } from "../components/ui/select";
 import { toast } from "sonner";
 
+const SETTINGS_KEY = "gramalert_settings";
+
+const defaultSettings = {
+  emailNotifications: true,
+  pushNotifications: true,
+  grievanceUpdates: true,
+  alertNotifications: true,
+  weeklyDigest: false,
+  profileVisibility: "public",
+  showEmail: false,
+  showPhone: false,
+  dataCollection: true,
+  theme: "system",
+  language: "english",
+  adminAlerts: true,
+  systemNotifications: true,
+};
+
 export default function Settings() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
   const isSuperAdmin = location.pathname.startsWith("/superadmin");
 
-  const [settings, setSettings] = useState({
-    // Notifications
-    emailNotifications: true,
-    pushNotifications: true,
-    grievanceUpdates: true,
-    alertNotifications: true,
-    weeklyDigest: false,
-    
-    // Privacy
-    profileVisibility: "public",
-    showEmail: false,
-    showPhone: false,
-    dataCollection: true,
-    
-    // Appearance
-    theme: "system",
-    language: "english",
-    
-    // Admin specific
-    adminAlerts: true,
-    systemNotifications: true,
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    } catch {
+      return defaultSettings;
+    }
   });
 
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }, [settings]);
+
+  // Theme logic is preserved via state but disabled visually to prevent UI breakage
+  useEffect(() => {
+    /*
+    const root = document.documentElement;
+    if (settings.theme === "dark") {
+      root.classList.add("dark");
+    } else if (settings.theme === "light") {
+      root.classList.remove("dark");
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.toggle("dark", prefersDark);
+    }
+    */
+  }, [settings.theme]);
+
   const handleToggle = (key: string) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
-    toast.success("Settings updated");
+    setSettings((prev: typeof defaultSettings) => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
+    toast.success("Settings saved");
   };
 
   const handleSelectChange = (key: string, value: string) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-    toast.success("Settings updated");
+    setSettings((prev: typeof defaultSettings) => ({ ...prev, [key]: value }));
+    toast.success("Settings saved");
   };
 
   const handleExportData = () => {
@@ -76,6 +99,7 @@ export default function Settings() {
   const handleDeleteAccount = () => {
     toast.error("Please contact support to delete your account.");
   };
+
 
   return (
     <DashboardLayout>

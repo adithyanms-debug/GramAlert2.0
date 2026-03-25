@@ -4,10 +4,20 @@ import { generateToken } from '../config/jwt.js';
 
 export const register = async (req, res, next) => {
     try {
-        const { username, password, email, phone } = req.body;
+        const { username, password, email, phone, panchayat_id } = req.body;
 
         const normalizedEmail = email.toLowerCase();
         const normalizedUsername = username; // Username can stay as is, but we'll check it case-insensitively
+
+        // Validate panchayat_id if provided
+        let validPanchayatId = null;
+        if (panchayat_id) {
+            const panchayatCheck = await query('SELECT id FROM panchayats WHERE id = $1', [panchayat_id]);
+            if (panchayatCheck.rows.length === 0) {
+                return res.status(400).json({ message: 'Invalid panchayat selection' });
+            }
+            validPanchayatId = panchayat_id;
+        }
 
         // Check if user exists in users table (Villagers)
         const userExist = await query('SELECT id FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($2)', [normalizedUsername, normalizedEmail]);
@@ -21,8 +31,8 @@ export const register = async (req, res, next) => {
 
         // Insert user (Always VILLAGER for self-registration)
         const result = await query(
-            'INSERT INTO users (username, password, email, phone) VALUES ($1, $2, $3, $4) RETURNING id, username, email',
-            [normalizedUsername, hashedPassword, normalizedEmail, phone]
+            'INSERT INTO users (username, password, email, phone, panchayat_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, panchayat_id',
+            [normalizedUsername, hashedPassword, normalizedEmail, phone, validPanchayatId]
         );
 
         const user = result.rows[0];

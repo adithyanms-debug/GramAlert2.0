@@ -9,13 +9,13 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, type: "spring" }}
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/70 border-b border-white/20"
+        className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm"
       >
         <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <motion.div
@@ -37,7 +37,7 @@ export default function Landing() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                className="absolute right-0 top-full mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-white/95 backdrop-blur-xl border border-white/60 rounded-xl shadow-xl p-2 z-50"
+                className="absolute right-0 top-full mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50"
               >
                 <Link to="/auth">
                   <motion.div
@@ -92,7 +92,7 @@ export default function Landing() {
               transition={{ duration: 1, delay: 0.2 }}
               className="inline-block"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 backdrop-blur-md border border-white/40 shadow-lg">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-200 shadow-sm">
                 <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-sm font-medium text-teal-800">Empowering Communities</span>
               </div>
@@ -137,7 +137,7 @@ export default function Landing() {
                   size="lg"
                   variant="outline"
                   onClick={scrollToFeatures}
-                  className="backdrop-blur-sm bg-white/50 border-white/60 shadow-md w-full sm:w-auto hover:bg-white/70"
+                  className="bg-white border-slate-200 shadow-sm w-full sm:w-auto hover:bg-slate-50 text-slate-700"
                 >
                   Learn More
                 </Button>
@@ -153,7 +153,7 @@ export default function Landing() {
             className="mt-16 relative"
           >
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/40">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl" />
+              <div className="absolute inset-0 bg-slate-50" />
               <div className="relative p-8 space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -184,7 +184,7 @@ export default function Landing() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 + i * 0.1 }}
                       whileHover={{ scale: 1.05, y: -5 }}
-                      className="p-4 rounded-xl bg-white/60 backdrop-blur-sm border border-white/60 cursor-pointer"
+                      className="p-4 rounded-xl bg-white shadow-md border border-slate-100 cursor-pointer"
                     >
                       <p className="text-xs text-slate-600 mb-3">{stat.label}</p>
                       <div className={`h-10 w-16 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
@@ -203,7 +203,7 @@ export default function Landing() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.8 + i * 0.1 }}
                       whileHover={{ x: 8, scale: 1.02 }}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-white/40 border border-white/50 cursor-pointer"
+                      className="flex items-center gap-4 p-4 rounded-xl bg-white shadow-sm border border-slate-100 cursor-pointer"
                     >
                       <div className="size-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200" />
                       <div className="flex-1 space-y-2">
@@ -221,7 +221,7 @@ export default function Landing() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 px-6 bg-white/40 backdrop-blur-md">
+      <section className="py-16 px-6 bg-slate-50">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
@@ -302,7 +302,7 @@ export default function Landing() {
                 whileHover={{ y: -8, scale: 1.02 }}
                 className="group"
               >
-                <div className="h-full p-8 rounded-2xl bg-white/60 backdrop-blur-md border border-white/60 shadow-lg hover:shadow-xl transition-all">
+                <div className="h-full p-8 rounded-2xl bg-white shadow-md border border-slate-100 hover:shadow-lg transition-all">
                   <motion.div
                     whileHover={{ rotate: 360, scale: 1.2 }}
                     transition={{ duration: 0.6 }}
@@ -420,7 +420,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-slate-200 bg-white/40">
+      <footer className="py-8 px-6 border-t border-slate-200 bg-white">
         <div className="container mx-auto max-w-6xl text-center text-slate-600">
           <p>© 2026 GramAlert. Empowering communities through technology.</p>
         </div>

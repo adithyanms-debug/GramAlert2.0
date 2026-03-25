@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Shield, Mail, Lock, User, ArrowLeft, Sparkles, Check } from "lucide-react";
+import { Shield, Mail, Lock, User, ArrowLeft, Sparkles, Check, MapPin } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -21,7 +21,21 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [panchayats, setPanchayats] = useState<{id: number; name: string}[]>([]);
+  const [selectedPanchayat, setSelectedPanchayat] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPanchayats = async () => {
+      try {
+        const res = await api.get('panchayats');
+        setPanchayats(res.data);
+      } catch (err) {
+        console.error('Failed to fetch panchayats');
+      }
+    };
+    fetchPanchayats();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,12 +51,19 @@ export default function Auth() {
           type: 'villager'
         });
       } else {
-        // Backend register expects: username, email, password, phone
+        // Validate panchayat selection
+        if (!selectedPanchayat) {
+          setErrorMsg("Please select your Panchayat");
+          setIsLoading(false);
+          return;
+        }
+        // Backend register expects: username, email, password, phone, panchayat_id
         response = await api.post("auth/register", {
           username: name.replace(/\s+/g, '').toLowerCase() || email.split('@')[0],
           email,
           password,
-          phone: "0000000000" // Default as front-end has no phone field
+          phone: "0000000000", // Default as front-end has no phone field
+          panchayat_id: parseInt(selectedPanchayat)
         });
       }
 
@@ -244,6 +265,40 @@ export default function Auth() {
                         placeholder="Enter your full name"
                         className="pl-11 h-12 bg-white/60 border-slate-200 focus:border-teal-500 focus:ring-teal-500 transition-all"
                       />
+                    </motion.div>
+                  </motion.div>
+                )}
+
+                {/* Panchayat Dropdown — register only */}
+                {!isLogin && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="panchayat" className="text-slate-700">Panchayat (Thrissur District)</Label>
+                    <motion.div
+                      initial={{ x: -20 }}
+                      animate={{ x: 0 }}
+                      className="relative group"
+                    >
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
+                      <select
+                        id="panchayat"
+                        value={selectedPanchayat}
+                        onChange={(e) => setSelectedPanchayat(e.target.value)}
+                        className="w-full pl-11 h-12 bg-white/60 border border-slate-200 rounded-md text-sm focus:border-teal-500 focus:ring-teal-500 focus:outline-none transition-all appearance-none cursor-pointer"
+                        required
+                      >
+                        <option value="">Select your Panchayat</option>
+                        {panchayats.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
                     </motion.div>
                   </motion.div>
                 )}

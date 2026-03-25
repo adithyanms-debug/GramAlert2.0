@@ -1,47 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Bell, X, AlertCircle, Info, CheckCircle } from "lucide-react";
+import { Bell, X, AlertCircle, Info, CheckCircle, ShieldAlert } from "lucide-react";
 import { Button } from "./ui/button";
+import api from "../api";
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  severity: "warning" | "info" | "success";
-  time: string;
-  read: boolean;
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: 1,
-    title: "Water Supply Maintenance",
-    message: "Water supply will be interrupted tomorrow from 10 AM to 2 PM",
-    severity: "warning",
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 2,
-    title: "Community Meeting",
-    message: "Monthly village meeting scheduled for this Sunday at 5 PM",
-    severity: "info",
-    time: "5 hours ago",
-    read: false,
-  },
-  {
-    id: 3,
-    title: "Road Work Completed",
-    message: "Main road repair work has been successfully completed",
-    severity: "success",
-    time: "1 day ago",
-    read: true,
-  },
-];
+// Replaced mock data with real-time fetching from /api/alerts
 
 export function NotificationsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.get('alerts');
+      // Sort by newest and take latest 5
+      const latestAlerts = (res.data || [])
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5)
+        .map((a: any) => ({
+          ...a,
+          read: false // Manage read state locally for session
+        }));
+      setNotifications(latestAlerts);
+    } catch (err) {
+      console.error('Failed to load notifications', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Re-fetch when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -55,12 +63,30 @@ export function NotificationsDropdown() {
     ));
   };
 
-  const severityConfig = {
-    warning: {
+  const severityConfig: Record<string, any> = {
+    critical: {
+      icon: ShieldAlert,
+      bg: "bg-red-100",
+      text: "text-red-700",
+      border: "border-red-200",
+    },
+    high: {
+      icon: AlertCircle,
+      bg: "bg-rose-100",
+      text: "text-rose-700",
+      border: "border-rose-200",
+    },
+    medium: {
       icon: AlertCircle,
       bg: "bg-amber-100",
       text: "text-amber-700",
       border: "border-amber-200",
+    },
+    low: {
+      icon: Info,
+      bg: "bg-blue-100",
+      text: "text-blue-700",
+      border: "border-blue-200",
     },
     info: {
       icon: Info,
@@ -77,7 +103,7 @@ export function NotificationsDropdown() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -152,8 +178,9 @@ export function NotificationsDropdown() {
                 ) : (
                   <div className="divide-y divide-slate-100">
                     {notifications.map((notification, index) => {
-                      const config = severityConfig[notification.severity];
-                      const Icon = config.icon;
+                      const sev = (notification.severity || 'info').toLowerCase();
+                      const config = severityConfig[sev] || severityConfig.info;
+                      const ConfigIcon = config.icon;
                       
                       return (
                         <motion.div
@@ -168,7 +195,7 @@ export function NotificationsDropdown() {
                         >
                           <div className="flex gap-3">
                             <div className={`size-10 rounded-lg ${config.bg} border ${config.border} flex items-center justify-center flex-shrink-0`}>
-                              <Icon className={`size-5 ${config.text}`} />
+                              <ConfigIcon className={`size-5 ${config.text}`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-1">
@@ -180,9 +207,11 @@ export function NotificationsDropdown() {
                                 )}
                               </div>
                               <p className="text-sm text-slate-600 mb-2 line-clamp-2">
-                                {notification.message}
+                                {notification.message || notification.description}
                               </p>
-                              <p className="text-xs text-slate-400">{notification.time}</p>
+                              <p className="text-xs text-slate-400">
+                                {new Date(notification.created_at).toLocaleDateString()} at {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             </div>
                           </div>
                         </motion.div>

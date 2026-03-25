@@ -3,16 +3,13 @@ import { motion } from "motion/react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import {
   FileText,
-  Plus,
   Clock,
   CheckCircle2,
-  AlertCircle,
   TrendingUp,
   Users,
   Bell,
   UserPlus,
   Crown,
-  Eye,
   Trash2,
   Loader2,
 } from "lucide-react";
@@ -66,12 +63,14 @@ export default function SuperAdminDashboard() {
   const [grievanceStats, setGrievanceStats] = useState<GrievanceStat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [panchayats, setPanchayats] = useState<any[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
+    panchayat_id: "",
   });
 
   const fetchData = async () => {
@@ -95,16 +94,21 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchData();
+    // Fetch panchayats for dropdown
+    api.get("panchayats").then(res => setPanchayats(res.data || [])).catch(() => {});
   }, []);
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
     try {
-      await api.post("superadmin/admins", formData);
+      await api.post("superadmin/admins", {
+        ...formData,
+        panchayat_id: parseInt(formData.panchayat_id),
+      });
       toast.success("Administrator created successfully");
       setIsAdminModalOpen(false);
-      setFormData({ username: "", email: "", password: "" });
+      setFormData({ username: "", email: "", password: "", panchayat_id: "" });
       fetchData();
     } catch (error: any) {
       const message = error.response?.data?.message || "Failed to create administrator";
@@ -262,6 +266,24 @@ export default function SuperAdminDashboard() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-panchayat">Assign Panchayat</Label>
+                    <Select
+                      value={formData.panchayat_id}
+                      onValueChange={(val) => setFormData({ ...formData, panchayat_id: val })}
+                    >
+                      <SelectTrigger className="bg-white/80">
+                        <SelectValue placeholder="Select panchayat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {panchayats.map((p: any) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.name} — {p.district}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Button
                     type="submit"

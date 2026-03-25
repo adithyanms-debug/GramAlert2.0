@@ -15,10 +15,11 @@ export const auth = async (req, res, next) => {
         let result;
         if (decoded.type === 'superadmin') {
             result = await query('SELECT id, username, email, role FROM super_admins WHERE id = $1', [decoded.id]);
+            // SuperAdmins have no panchayat_id — they see all data
         } else if (decoded.type === 'admin') {
-            result = await query('SELECT id, username, email, role FROM admins WHERE id = $1', [decoded.id]);
+            result = await query('SELECT id, username, email, role, panchayat_id FROM admins WHERE id = $1', [decoded.id]);
         } else {
-            result = await query('SELECT id, username, email FROM users WHERE id = $1', [decoded.id]);
+            result = await query('SELECT id, username, email, panchayat_id FROM users WHERE id = $1', [decoded.id]);
             if (result.rows.length > 0) {
                 result.rows[0].role = 'VILLAGER'; // Villagers don't have role in DB, set it manually
             }

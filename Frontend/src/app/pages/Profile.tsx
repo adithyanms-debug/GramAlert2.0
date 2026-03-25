@@ -6,7 +6,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
   Shield,
   Edit2,
   Save,
@@ -43,7 +42,7 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoadingItems, setIsLoadingItems] = useState(true);
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -63,8 +62,6 @@ export default function Profile() {
         if (userData.name === "Loading...") {
           setUserData(prev => ({ ...prev, name: "User" }));
         }
-      } finally {
-        setIsLoadingItems(false);
       }
     };
 
@@ -123,8 +120,10 @@ export default function Profile() {
                   <div className="size-32 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
                     {userData.name.charAt(0)}
                   </div>
-                  <button className="absolute bottom-0 right-0 size-10 rounded-full bg-white border-2 border-teal-500 flex items-center justify-center shadow-lg hover:bg-teal-50 transition-colors">
-                    <Camera className="size-5 text-teal-600" />
+                  <button
+                    onClick={() => toast.info("Profile photo upload coming soon")}
+                    className="absolute bottom-0 right-0 size-10 rounded-full bg-white border-2 border-teal-500 flex items-center justify-center shadow-lg hover:bg-teal-50 transition-colors"
+                  >                    <Camera className="size-5 text-teal-600" />
                   </button>
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mt-4">

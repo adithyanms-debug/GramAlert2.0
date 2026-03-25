@@ -25,6 +25,7 @@ import { toast } from "sonner";
 export default function AdminVillagers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLocation, setFilterLocation] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
   const [villagers, setVillagers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +54,19 @@ export default function AdminVillagers() {
 
     // Simple filter for now, can be expanded
     return matchesSearch;
+  });
+
+  // Apply sorting
+  const sortedVillagers = [...filteredVillagers].sort((a, b) => {
+    switch (sortBy) {
+      case "name":
+        return (a.name || "").localeCompare(b.name || "");
+      case "grievances":
+        return (parseInt(b.grievances || 0)) - (parseInt(a.grievances || 0));
+      case "recent":
+      default:
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    }
   });
 
   if (loading) {
@@ -145,7 +159,7 @@ export default function AdminVillagers() {
               </SelectContent>
             </Select>
 
-            <Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="bg-white/80">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
@@ -170,7 +184,7 @@ export default function AdminVillagers() {
               Registered Villagers
             </h3>
             <p className="text-sm text-slate-600">
-              Showing {filteredVillagers.length} villagers
+              Showing {sortedVillagers.length} villagers
             </p>
           </div>
 
@@ -203,14 +217,14 @@ export default function AdminVillagers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredVillagers.length === 0 ? (
+                  {sortedVillagers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-slate-500">
                         No villagers found.
                       </td>
                     </tr>
                   ) : (
-                    filteredVillagers.map((villager, index) => (
+                    sortedVillagers.map((villager, index) => (
                       <motion.tr
                         key={villager.id}
                         initial={{ opacity: 0, x: -20 }}
@@ -262,7 +276,12 @@ export default function AdminVillagers() {
                         </td>
                         <td className="py-4 px-4">
                           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 px-2"
+                              onClick={() => toast.info(`${villager.name || 'Villager'} — ${villager.email || 'No email'} — ${villager.grievances || 0} grievances`)}
+                            >
                               <Eye className="size-4" />
                               <span className="hidden sm:inline ml-1">View</span>
                             </Button>

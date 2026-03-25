@@ -5,6 +5,8 @@ export const getGrievances = async (req, res, next) => {
     try {
         const { status, category, priority } = req.query;
         const userId = req.user.id;
+        const userRole = req.user.role;
+        const panchayatId = req.user.panchayat_id;
 
         let baseQuery = `
             SELECT g.*, u.username as submitted_by,
@@ -16,6 +18,12 @@ export const getGrievances = async (req, res, next) => {
         `;
         const values = [userId];
         let idx = 2;
+
+        // Panchayat isolation: Admin sees only their panchayat, SuperAdmin sees all
+        if (userRole !== 'SUPERADMIN' && panchayatId) {
+            baseQuery += ` AND g.panchayat_id = $${idx++}`;
+            values.push(panchayatId);
+        }
 
 
         if (status) {
@@ -51,6 +59,7 @@ export const getMyGrievances = async (req, res, next) => {
     try {
         const { status, category, priority } = req.query;
         const userId = req.user.id;
+        const panchayatId = req.user.panchayat_id;
 
         let baseQuery = `
             SELECT g.*, u.username as submitted_by,
@@ -62,6 +71,12 @@ export const getMyGrievances = async (req, res, next) => {
         `;
         const values = [userId, userId];
         let idx = 3;
+
+        // Strict isolation: ensure user only sees grievances from their assigned panchayat
+        if (panchayatId) {
+            baseQuery += ` AND g.panchayat_id = $${idx++}`;
+            values.push(panchayatId);
+        }
 
         if (status) {
             baseQuery += ` AND g.status = $${idx++}`;
@@ -107,6 +122,11 @@ export const getGrievanceById = async (req, res, next) => {
 
         const grievance = result.rows[0];
 
+        // Cross-panchayat isolation check
+        if (role !== 'SUPERADMIN' && req.user.panchayat_id && grievance.panchayat_id !== req.user.panchayat_id) {
+            return res.status(403).json({ message: 'Access denied (cross-panchayat)' });
+        }
+
         // Access check
         if (role === 'VILLAGER' && grievance.user_id !== userId) {
             return res.status(403).json({ message: 'Forbidden: You do not have access to this grievance' });
@@ -141,6 +161,7 @@ export const createGrievance = async (req, res, next) => {
     try {
         const { title, description, category, latitude, longitude } = req.body;
         const userId = req.user.id;
+        const panchayatId = req.user.panchayat_id;
 
         let file_url = null;
         if (req.file) {
@@ -154,9 +175,9 @@ export const createGrievance = async (req, res, next) => {
 
         // Note: deadline is auto-calculated by trigger on insert
         const result = await query(
-            `INSERT INTO grievances (title, description, category, user_id, latitude, longitude, file_url, severity, priority_score)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [title, description, category, userId, latitude || null, longitude || null, file_url, severity, priority_score]
+            `INSERT INTO grievances (title, description, category, user_id, latitude, longitude, file_url, severity, priority_score, panchayat_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+            [title, description, category, userId, latitude || null, longitude || null, file_url, severity, priority_score, panchayatId]
         );
 
         res.status(201).json({
@@ -199,7 +220,21 @@ export const updateStatus = async (req, res, next) => {
 
 export const getOverdueGrievances = async (req, res, next) => {
     try {
-        const result = await query('SELECT * FROM grievances WHERE is_overdue = TRUE ORDER BY deadline ASC');
+        const panchayatId = req.user.panchayat_id;
+        const role = req.user.role;
+
+        let overdueQuery = 'SELECT * FROM grievances WHERE is_overdue = TRUE';
+        const values = [];
+
+        // Panchayat isolation: non-superadmin sees only their panchayat
+        if (role !== 'SUPERADMIN' && panchayatId) {
+            overdueQuery += ' AND panchayat_id = $1';
+            values.push(panchayatId);
+        }
+
+        overdueQuery += ' ORDER BY deadline ASC';
+
+        const result = await query(overdueQuery, values);
         res.json(result.rows);
     } catch (error) {
         next(error);
@@ -219,6 +254,12 @@ export const updateGrievance = async (req, res, next) => {
         }
 
         const grievance = grievanceResult.rows[0];
+
+        // Cross-panchayat isolation check
+        if (req.user.role !== 'SUPERADMIN' && req.user.panchayat_id && grievance.panchayat_id !== req.user.panchayat_id) {
+            return res.status(403).json({ message: 'Forbidden: cross-panchayat access' });
+        }
+
         if (grievance.user_id != userId) {
             return res.status(403).json({ message: 'Forbidden: You do not own this grievance' });
         }
@@ -274,6 +315,11 @@ export const deleteGrievance = async (req, res, next) => {
         }
 
         const grievance = grievanceResult.rows[0];
+
+        // Cross-panchayat isolation check
+        if (role !== 'SUPERADMIN' && req.user.panchayat_id && grievance.panchayat_id !== req.user.panchayat_id) {
+            return res.status(403).json({ message: 'Forbidden: cross-panchayat access' });
+        }
 
         // Authorization logic
         if (role === 'VILLAGER') {

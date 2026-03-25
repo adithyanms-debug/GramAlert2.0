@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Download,
   Search,
+  Filter,
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -179,7 +180,38 @@ export default function AdminGrievances() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" className="bg-white/80">
+            <Button
+              variant="outline"
+              className="bg-white/80"
+              onClick={() => {
+                if (filteredGrievances.length === 0) {
+                  toast.error("No grievances to export");
+                  return;
+                }
+                const headers = ["ID", "Title", "Category", "Priority", "Status", "Submitted By", "Date", "Upvotes", "Priority Score", "Severity"];
+                const rows = filteredGrievances.map(g => [
+                  `GRV-${g.id}`,
+                  `"${(g.title || '').replace(/"/g, '""')}"`,
+                  g.category || '',
+                  g.priority || '',
+                  g.status || '',
+                  g.submitted_by || '',
+                  g.created_at ? new Date(g.created_at).toLocaleDateString() : '',
+                  g.upvote_count || 0,
+                  g.priority_score || 0,
+                  g.severity || 'Low',
+                ]);
+                const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `grievances_${new Date().toISOString().split("T")[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success(`Exported ${filteredGrievances.length} grievances`);
+              }}
+            >
               <Download className="size-4 mr-2" />
               Export
             </Button>
@@ -247,8 +279,12 @@ export default function AdminGrievances() {
                 <tbody>
                   {filteredGrievances.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-500">
-                        No grievances found.
+                      <td colSpan={8} className="py-12">
+                        <div className="flex flex-col items-center justify-center text-slate-500">
+                          <Filter className="size-10 mb-3 opacity-40 text-slate-400" />
+                          <p className="text-base font-medium">No grievances found</p>
+                          <p className="text-sm mt-1">Try adjusting your filters or search terms.</p>
+                        </div>
                       </td>
                     </tr>
                   ) : (

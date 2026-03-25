@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Info,
   AlertTriangle,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -77,6 +78,8 @@ export default function AdminAlerts() {
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const fetchAlerts = async () => {
     try {
@@ -101,6 +104,8 @@ export default function AdminAlerts() {
       toast.error("Please fill in all fields");
       return;
     }
+    
+    setIsCreating(true);
 
     try {
       await api.post("alerts", newAlert);
@@ -111,6 +116,8 @@ export default function AdminAlerts() {
     } catch (error) {
       console.error("Failed to create alert", error);
       toast.error("Failed to publish alert");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -120,6 +127,8 @@ export default function AdminAlerts() {
       toast.error("Please fill in all fields");
       return;
     }
+
+    setIsEditing(true);
 
     try {
       await api.put(`alerts/${editingAlert.id}`, {
@@ -134,6 +143,8 @@ export default function AdminAlerts() {
     } catch (error) {
       console.error("Failed to update alert", error);
       toast.error("Failed to update alert");
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -241,10 +252,15 @@ export default function AdminAlerts() {
                   </div>
                   <Button
                     type="submit"
+                    disabled={isCreating}
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   >
-                    <Bell className="size-4 mr-2" />
-                    Publish Alert
+                    {isCreating ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <Bell className="size-4 mr-2" />
+                    )}
+                    {isCreating ? "Publishing..." : "Publish Alert"}
                   </Button>
                 </form>
               </DialogContent>
@@ -303,10 +319,15 @@ export default function AdminAlerts() {
                 </div>
                 <Button
                   type="submit"
+                  disabled={isEditing}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >
-                  <Bell className="size-4 mr-2" />
-                  Update Alert
+                  {isEditing ? (
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                  ) : (
+                    <Bell className="size-4 mr-2" />
+                  )}
+                  {isEditing ? "Updating..." : "Update Alert"}
                 </Button>
               </form>
             )}
