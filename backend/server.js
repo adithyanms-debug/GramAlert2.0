@@ -56,7 +56,7 @@ app.use('/api/escalations', escalationRoutes);
 app.use('/api/panchayats', panchayatRoutes);
 
 // Catch-all route to serve index.html for React Router
-app.get('/*', (req, res) => {
+app.get('/:path*', (req, res) => {
     // If the request is for an API route that doesn't exist, return 404
     if (req.path.startsWith('/api')) {
         return res.status(404).json({ error: 'API route not found' });
