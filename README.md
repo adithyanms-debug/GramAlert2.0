@@ -1,130 +1,102 @@
-# GramAlert 🏛️
+# GramAlert
 
-GramAlert is a **community grievance reporting and civic alert platform** that allows villagers to report local issues while enabling administrators to manage grievances and broadcast important alerts.
 
-The platform provides:
-* **Grievance submission** with image and location data
-* **Map-based issue reporting** for spatial visualization
-* **Community discussion** via internal and external comments
-* **Administrative alert broadcasting** for critical announcements
-* **Hierarchical governance** management across three defined tiers
+GramAlert is a community grievance reporting and civic alert platform designed to bridge the communication gap between citizens and local governance. It enables villagers to report local issues, allows administrators to manage grievances, and facilitates the broadcasting of critical alerts.
 
 ---
 
-## 📖 Project Overview
+## Latest Major Updates
 
-GramAlert is designed to bridge the communication gap between citizens and local governance. It provides a transparent and efficient system for:
-- Reporting civic problems with visual evidence.
-- Tracking resolution progress in real-time.
-- Enabling community participation through feedback.
-- Improving administrative response times.
+### Multi-level Auto-Escalation System
+A robust escalation infrastructure has been implemented, allowing grievances to be automatically or manually escalated through three tiers of governance: Panchayat, Block, and District. This includes a detailed history timeline and status indicators for administrative oversight.
 
-The platform helps local governments monitor community issues while keeping citizens informed through real-time alerts and status updates.
+### Dedicated Rankings and Insights
+The Panchayat Leaderboard has been moved to a dedicated Rankings page, providing a centralized view of performance metrics and community impact across different regions.
 
----
-
-## ✨ Current Features
-
-### 👤 User Features (Villagers)
-*   **Submit Grievance**: Report issues with title, description, category, image upload, and interactive map location pin.
-*   **Edit/Delete Grievance**: Users can manage their submitted grievances until the issue moves to "In Progress".
-*   **Comment on Grievances**: Participate in discussions about reported problems.
-*   **View Grievance Status**: Track grievance progress in real-time.
-*   **Map-based Visualization**: View reported community issues on an interactive map.
-
-### 🛡️ Admin Features
-*   **Manage Grievances**: Review and organize community complaints efficiently.
-*   **Update Status**: Workflow management: `Received` → `In Progress` → `Resolved` / `Rejected`.
-*   **Broadcast Alerts**: Send announcements related to emergencies, water, electricity, or health updates.
-*   **Edit/Delete Alerts**: Maintain accuracy of broadcasted alerts.
-*   **Dashboard Analytics**: Overview of grievance statistics and system activity.
-
-### 👑 SuperAdmin Features
-*   **Create Administrators**: Recruit and manage administrative users.
-*   **System Overview**: Monitor system activity and grievance metrics at scale.
-*   **Access Control**: Oversee administrator roles and permissions.
+### Real-time Profile Integration
+Villager profiles now synchronize directly with the backend database, ensuring that user information and activity history are always accurate and up-to-date.
 
 ---
 
-## 🏗️ System Architecture
+## Core Features
 
--   **Frontend**: React + TypeScript + Tailwind CSS
--   **Backend**: Node.js + Express
--   **Database**: PostgreSQL
--   **Key Technologies**:
-    -   **JWT Authentication**: Secure role-based access control.
-    -   **Axios**: Promise-based HTTP client for API communication.
-    -   **Leaflet / MapLibre**: Interactive map visualization.
-    -   **Sonner**: Real-time user feedback and toast notifications.
+### For Villagers
+*   Submit Grievances: Report issues with detailed descriptions, categories, image uploads, and precise map locations.
+*   Track Progress: Real-time monitoring of grievance status from submission to resolution.
+*   Community Interaction: Participate in discussions through internal and external commenting systems.
+*   Personalized Dashboard: Manage personal reports and profile information.
+
+### For Administrators
+*   Grievance Management: Efficiently review, categorize, and prioritize community reports.
+*   Resolution Workflow: Structured status transitions: Received, In Progress, Resolved, or Rejected.
+*   Broadcast Alerts: Issue critical announcements regarding public services, health, or emergencies.
+*   Escalation Control: Manage and monitor escalated issues across different governance levels.
+
+### For Super Administrators
+*   System Oversight: Monitor system-wide activity, grievance trends, and administrative performance.
+*   User Management: Create and manage administrative accounts and role-based permissions.
+*   Global Configuration: Maintain system settings and global alert standards.
 
 ---
 
-## 📁 Project Structure
+## Technology Stack
 
-```bash
+### Frontend
+*   Core: React 18 with TypeScript
+*   Build Tool: Vite 6
+*   Styling: Tailwind CSS 4
+*   UI Components: Radix UI, Lucide React
+*   Interactivity: Framer Motion (motion), Sonner (Notifications)
+*   Maps: Leaflet, MapLibre GL
+
+### Backend
+*   Runtime: Node.js (v18+)
+*   Framework: Express 5
+*   Database: PostgreSQL
+*   Authentication: JWT (JSON Web Tokens), BcryptJS
+*   Communication: Axios
+
+---
+
+## Project Structure
+
+```text
 GramAlert/
-│
-├── Frontend/              # React application
-│   ├── src/               # Components, pages, and application logic
-│   ├── docs/              # Frontend documentation & guides
-│   └── package.json
-│
-├── backend/               # Express server
-│   ├── src/               # Controllers, routes, and middleware
-│   ├── docs/              # Backend API documentation
-│   └── server.js          # Entry point
-│
+├── Frontend/              # React application source and assets
+│   ├── src/               # Application logic, components, and pages
+│   └── docs/              # Frontend-specific documentation
+├── backend/               # Express server and database logic
+│   ├── src/               # Controllers, routes, and services
+│   └── docs/              # API documentation and schema guides
 └── README.md              # Main project documentation
 ```
 
 ---
 
-## 📚 Documentation
-
-Detailed documentation for the system can be found in the following locations:
-
-### [Frontend Documentation](Frontend/docs/)
-*   📘 **[Frontend Guide](Frontend/docs/FRONTEND_GUIDE.md)**: UI components and interaction details.
-*   🧱 **[Project Structure](Frontend/docs/PROJECT_STRUCTURE.md)**: Directory layout and architectural patterns.
-*   🚀 **[Quick Start Guide](Frontend/docs/QUICK_START.md)**: Installation and running instructions.
-*   📜 **[Changelog](Frontend/docs/CHANGELOG.md)**: Version history and recent updates.
-*   ⚖️ **[Attributions](Frontend/docs/ATTRIBUTIONS.md)**: Third-party licenses and credits.
-
-### [Backend Documentation](backend/docs/)
-*   📙 **[Backend Guide](backend/docs/BACKEND_GUIDE.md)**: API endpoints, authentication, and database schema.
-
----
-
-## 🚀 Running the Project
+## Getting Started
 
 ### Prerequisites
-*   Node.js v18+
-*   PostgreSQL database
+*   Node.js v18 or higher
+*   PostgreSQL instance
 
-### Backend Setup
-```bash
-cd backend
-npm install
-npm run dev
-```
+### Backend Installation
+1.  Navigate to the backend directory: `cd backend`
+2.  Install dependencies: `npm install`
+3.  Start the development server: `npm run dev`
 
-### Frontend Setup
-```bash
-cd Frontend
-npm install
-npm run dev
-```
+### Frontend Installation
+1.  Navigate to the Frontend directory: `cd Frontend`
+2.  Install dependencies: `npm install`
+3.  Start the development server: `npm run dev`
 
 ---
 
-## 🔮 Planned Features
-*   **Priority Scoring Algorithm**: Automatically rank grievances based on severity and community impact.
-*   **Community Upvote System**: Allow villagers to indicate the importance of existing grievances.
-*   **Automatic Escalation**: Escalate unresolved issues to higher authorities after a defined time period.
-*   **AI Duplicate Detection**: Detect similar complaints and group related issues automatically.
-*   **AI-Generated Alerts**: Automated generation of alerts based on system events or external data.
+## Documentation
+Additional detailed documentation is available in the respective directories:
+*   Frontend Guides: [Frontend/docs/](Frontend/docs/)
+*   API Reference: [backend/docs/](backend/docs/)
 
 ---
 
-### ❤️ Civic Technology Initiative
-*Made with ❤️ to improve civic engagement, transparency, and public service efficiency.*
+### Civic Technology Initiative
+Focused on improving engagement, transparency, and public service efficiency.
