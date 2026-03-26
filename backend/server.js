@@ -55,8 +55,8 @@ app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/escalations', escalationRoutes);
 app.use('/api/panchayats', panchayatRoutes);
 
-// Catch-all route to serve index.html for React Router (Express 5 Syntax)
-app.get('/:path*', (req, res) => {
+// Catch-all: If no routes matched, and not an API request, serve index.html
+app.use((req, res, next) => {
     // If the request is for an API route that doesn't exist, return 404
     if (req.path.startsWith('/api')) {
         return res.status(404).json({ error: 'API route not found' });
