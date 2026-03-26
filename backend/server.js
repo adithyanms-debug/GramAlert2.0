@@ -21,6 +21,7 @@ import panchayatRoutes from './src/routes/panchayat.routes.js';
 // Import Middleware & Services
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { initEscalationCron } from './src/services/escalation.service.js';
+import { runMigrations } from './src/db/migrationRunner.js';
 
 
 
@@ -61,8 +62,15 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    // Initialize Cron Jobs
-    initEscalationCron();
-});
+const startServer = async () => {
+    // Run migrations on startup
+    await runMigrations();
+
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        // Initialize Cron Jobs
+        initEscalationCron();
+    });
+};
+
+startServer();

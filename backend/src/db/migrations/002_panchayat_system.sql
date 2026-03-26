@@ -7,8 +7,8 @@
 -- 1. Create Panchayats Table
 CREATE TABLE IF NOT EXISTS panchayats (
   id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  district TEXT,
+  name TEXT NOT NULL UNIQUE,
+  district TEXT DEFAULT 'Thrissur',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -68,17 +68,32 @@ END $$;
 
 -- 5. Seed real Panchayat data (idempotent — checks by name)
 INSERT INTO panchayats (name, district)
+VALUES
+('Kodakara','Thrissur'),
+('Chalakudy','Thrissur'),
+('Irinjalakuda','Thrissur'),
+('Ollur','Thrissur'),
+('Guruvayur','Thrissur'),
+('Kunnamkulam','Thrissur'),
+('Wadakkanchery','Thrissur'),
+('Mala','Thrissur'),
+('Anthikad','Thrissur'),
+('Cherpu','Thrissur')
+ON CONFLICT (id) DO NOTHING;
+
+-- Also handle cases where ID isn't known but name exists
+INSERT INTO panchayats (name, district)
 SELECT name, district FROM (VALUES
-  ('Kodakara', 'Thrissur'),
-  ('Chalakudy', 'Thrissur'),
-  ('Irinjalakuda', 'Thrissur'),
-  ('Mala', 'Thrissur'),
-  ('Annamanada', 'Thrissur'),
-  ('Koratty', 'Thrissur'),
-  ('Pariyaram', 'Thrissur'),
-  ('Melur', 'Thrissur'),
-  ('Aloor', 'Thrissur'),
-  ('Puthukkad', 'Thrissur')
+  ('Kodakara','Thrissur'),
+  ('Chalakudy','Thrissur'),
+  ('Irinjalakuda','Thrissur'),
+  ('Ollur','Thrissur'),
+  ('Guruvayur','Thrissur'),
+  ('Kunnamkulam','Thrissur'),
+  ('Wadakkanchery','Thrissur'),
+  ('Mala','Thrissur'),
+  ('Anthikad','Thrissur'),
+  ('Cherpu','Thrissur')
 ) AS v(name, district)
 WHERE NOT EXISTS (
   SELECT 1 FROM panchayats p WHERE p.name = v.name

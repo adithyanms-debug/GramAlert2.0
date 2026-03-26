@@ -1,11 +1,4 @@
--- Drop existing tables to ensure a clean slate
-DROP TABLE IF EXISTS comments CASCADE;
-DROP TABLE IF EXISTS escalations CASCADE;
-DROP TABLE IF EXISTS alerts CASCADE;
-DROP TABLE IF EXISTS grievances CASCADE;
-DROP TABLE IF EXISTS admins CASCADE;
-DROP TABLE IF EXISTS super_admins CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Drop existing tables to ensure a clean slate (REMOVED logic to prevent data loss)
 
 -- Users table (Now only for Villagers)
 CREATE TABLE IF NOT EXISTS users (
