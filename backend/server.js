@@ -42,6 +42,11 @@ app.use(morgan('dev'));
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Health check for Render
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Static folder for frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -68,8 +73,8 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT} and bound to 0.0.0.0`);
     // Initialize Cron Jobs
     initEscalationCron();
 });
