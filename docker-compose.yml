@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # The unified application (Backend + Frontend)
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/gramalert_db
+      - JWT_SECRET=local_development_secret
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+    restart: always
+
+  # Managed PostgreSQL database for local development
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=gramalert_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432" # Mapped to 5433 locally to avoid port conflicts
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pgdata:

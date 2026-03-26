@@ -42,6 +42,9 @@ app.use(morgan('dev'));
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Static folder for frontend
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/grievances', grievanceRoutes);
@@ -52,9 +55,13 @@ app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/escalations', escalationRoutes);
 app.use('/api/panchayats', panchayatRoutes);
 
-// Root Endpoint
-app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to GramAlert API' });
+// Catch-all route to serve index.html for React Router
+app.get('*', (req, res) => {
+    // If the request is for an API route that doesn't exist, return 404
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API route not found' });
+    }
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Global Error Handler
