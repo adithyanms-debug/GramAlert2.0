@@ -1,12 +1,18 @@
 import pkg from "pg";
 const { Pool } = pkg;
 
+if (!process.env.DATABASE_URL) {
+    console.error('FATAL: DATABASE_URL environment variable is not set.');
+    process.exit(1);
+}
+
+const isLocal = process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('127.0.0.1');
+
+console.log(`[DB] Connecting... SSL: ${isLocal ? 'OFF (local)' : 'ON (production)'}`);
+
 const pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: String(process.env.DB_PASSWORD),
+    connectionString: process.env.DATABASE_URL,
+    ssl: isLocal ? false : { rejectUnauthorized: false }
 });
 
 pool.on('error', (err) => {
