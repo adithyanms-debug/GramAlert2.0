@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Get the base URL from environment variables, or fallback to localhost during development
 // We use 'as any' here to bypass TypeScript's restrictive ImportMeta checks in Vite
-const API_BASE_URL = ((import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api').replace(/\/$/, '') + '/';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') + '/';
 export const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/$/, '');
 
 const api = axios.create({

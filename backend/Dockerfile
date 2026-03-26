@@ -1,16 +1,12 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
-# Install dependencies first for better caching
 COPY package*.json ./
-RUN npm install --production
+RUN npm install
 
-# Copy source code
 COPY . .
 
-# Expose backend port
 EXPOSE 8080
 
-# Start server
 CMD ["npm", "start"]
