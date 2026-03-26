@@ -7,6 +7,7 @@ export const getPanchayats = async (req, res) => {
         );
         res.json(result.rows);
     } catch (error) {
+        console.error('Failed to fetch panchayats:', error);
         res.status(500).json({ message: 'Failed to fetch panchayats' });
     }
 };
