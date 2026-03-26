@@ -52,6 +52,12 @@ Thumbs.db
 # Testing / Coverage
 # ==============================
 coverage/
+backend/test*.js
+backend/test*.cjs
+backend/test*.mjs
+test/
+*.spec.js
+*.test.js
 
 # ==============================
 # Uploads
